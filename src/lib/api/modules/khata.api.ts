@@ -39,9 +39,16 @@ export interface KhataEntry {
 export interface KhataDueSummary {
   totalDueCents: number;
   totalReceivableCents: number;
+  totalPayableCents: number;
   customerDueCents: number;
   supplierDueCents: number;
-  accountsCount: number;
+  netReceivableCents: number;
+  accountsCount?: number;
+}
+
+export interface EnsureKhataAccountRequest {
+  partyType: KhataPartyType;
+  partyId: string;
 }
 
 // ─── Request DTOs ─────────────────────────────────────────────────────────────
@@ -78,8 +85,30 @@ export interface KhataAdjustmentRequest {
 /**
  * Get the aggregated due/receivable summary across all khata accounts
  */
+function normalizeDueSummary(raw: Record<string, number>): KhataDueSummary {
+  const totalReceivableCents = raw.totalReceivableCents ?? raw.customerDueCents ?? 0;
+  const totalPayableCents = raw.totalPayableCents ?? raw.supplierDueCents ?? 0;
+  return {
+    totalReceivableCents,
+    totalPayableCents,
+    customerDueCents: totalReceivableCents,
+    supplierDueCents: totalPayableCents,
+    netReceivableCents: raw.netReceivableCents ?? totalReceivableCents - totalPayableCents,
+    totalDueCents: totalReceivableCents + totalPayableCents,
+    accountsCount: raw.accountsCount,
+  };
+}
+
 export async function getKhataDueSummary(): Promise<KhataDueSummary> {
-  const res = await apiClient.get<KhataDueSummary>('/khata/due-summary');
+  const res = await apiClient.get<Record<string, number>>('/khata/due-summary');
+  return normalizeDueSummary(res.data);
+}
+
+/**
+ * Ensure a khata account exists for a customer or supplier party
+ */
+export async function ensureKhataAccount(data: EnsureKhataAccountRequest): Promise<KhataAccount> {
+  const res = await apiClient.post<KhataAccount>('/khata/accounts/ensure', data);
   return res.data;
 }
 

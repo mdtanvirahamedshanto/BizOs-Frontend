@@ -14,12 +14,13 @@ import {
   useUpdateSupplierMutation as useUpdateSupplierMutationBase,
   useDeleteSupplierMutation as useDeleteSupplierMutationBase,
 } from '@/hooks/queries/use-supplier-query';
-import { useKhataAccountsQuery } from '@/hooks/queries/use-khata-query';
+import { useKhataAccountsQuery, useKhataEntriesQuery } from '@/hooks/queries/use-khata-query';
 import { khata } from '@/lib/api';
 import { queryKeys } from '@/hooks/queries/query-keys';
 import {
   toSupplierView,
   supplierLedgerToView,
+  khataEntryToSupplierLedger,
   toPaymentMethod,
   type SupplierView,
   type SupplierLedgerItemView,
@@ -44,9 +45,9 @@ function useKhataSupplierMaps() {
   }, [data]);
 }
 
-async function resolveSupplierKhataAccountId(supplierId: string): Promise<string | null> {
-  const res = await khata.listKhataAccounts({ partyType: 'SUPPLIER', limit: 100 });
-  return res.data.find((a) => a.partyId === supplierId)?.id ?? null;
+async function resolveSupplierKhataAccountId(supplierId: string): Promise<string> {
+  const account = await khata.ensureKhataAccount({ partyType: 'SUPPLIER', partyId: supplierId });
+  return account.id;
 }
 
 export function useSuppliersQuery(
@@ -121,16 +122,30 @@ export function useSupplierLedgerQuery(supplierId: string | null) {
 }
 
 export function useSupplierPaymentsHistoryQuery(supplierId: string | null) {
-  const query = useSupplierPaymentsQuery(supplierId ?? '', { limit: 50 });
+  const { accountByParty } = useKhataSupplierMaps();
+  const accountId = accountByParty.get(supplierId ?? '') ?? '';
 
-  const payments = useMemo(
-    () => (query.data?.data ?? []).map(supplierLedgerToView),
-    [query.data],
-  );
+  const khataQuery = useKhataEntriesQuery(accountId, { limit: 50 });
+  const purchaseQuery = useSupplierPaymentsQuery(supplierId ?? '', { limit: 50 });
+
+  const payments = useMemo(() => {
+    const fromKhata = (khataQuery.data?.data ?? [])
+      .filter((e) => e.type === 'REPAYMENT' || e.type === 'COLLECTION')
+      .map(khataEntryToSupplierLedger);
+
+    const fromPurchases = (purchaseQuery.data?.data ?? [])
+      .filter((e) => e.type === 'PAYMENT')
+      .map(supplierLedgerToView);
+
+    return [...fromKhata, ...fromPurchases].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+    );
+  }, [khataQuery.data, purchaseQuery.data]);
 
   return {
-    ...query,
+    ...purchaseQuery,
     data: payments,
+    isLoading: purchaseQuery.isLoading || (!!accountId && khataQuery.isLoading),
     enabled: !!supplierId,
   };
 }
@@ -150,15 +165,12 @@ export function useCreateSupplierMutation() {
       });
 
       if (input.initialDue && input.initialDue > 0) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.khata.accounts() });
         const accountId = await resolveSupplierKhataAccountId(supplier.id);
-        if (accountId) {
-          await khata.recordKhataAdjustment(accountId, {
-            type: 'CREDIT',
-            amountCents: takaToCents(input.initialDue),
-            description: 'প্রারম্ভিক পাওনা',
-          });
-        }
+        await khata.recordKhataAdjustment(accountId, {
+          type: 'CREDIT',
+          amountCents: takaToCents(input.initialDue),
+          description: 'প্রারম্ভিক পাওনা',
+        });
       }
 
       return toSupplierView(supplier, input.initialDue ? takaToCents(input.initialDue) : 0);
@@ -209,11 +221,7 @@ export function useRecordSupplierSettlementMutation() {
       supplierId: string;
       input: SettlementRecordInput;
     }) => {
-      let accountId = await resolveSupplierKhataAccountId(supplierId);
-
-      if (!accountId) {
-        throw new Error('মহাজনের খাতা অ্যাকাউন্ট পাওয়া যায়নি।');
-      }
+      const accountId = await resolveSupplierKhataAccountId(supplierId);
 
       await khata.recordRepayment(accountId, {
         amountCents: takaToCents(input.amount),

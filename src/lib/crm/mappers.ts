@@ -133,7 +133,8 @@ export interface SupplierLedgerItemView {
 }
 
 export function supplierLedgerToView(entry: SupplierLedgerEntry): SupplierLedgerItemView {
-  const isPayment = entry.type === 'PAYMENT';
+  const isPayment =
+    entry.type === 'PAYMENT' || entry.type === 'REPAYMENT' || entry.type === 'CREDIT';
   return {
     id: entry.id,
     timestamp: entry.createdAt,

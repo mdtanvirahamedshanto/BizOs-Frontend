@@ -17,7 +17,7 @@ import {
 } from '@/hooks/queries/use-khata-query';
 import { khata } from '@/lib/api';
 import { queryKeys } from '@/hooks/queries/query-keys';
-import { parseAddressString, toCustomerView, khataEntryToLedgerItem } from '@/lib/crm/mappers';
+import { parseAddressString, toCustomerView, khataEntryToLedgerItem, toPaymentMethod } from '@/lib/crm/mappers';
 import { takaToCents } from '@/lib/crm/money';
 import type { CustomerView, CustomerLedgerItemView } from '@/lib/crm/mappers';
 import type { CustomerInput, LedgerEntryInput } from '../types';
@@ -41,9 +41,9 @@ function useKhataBalanceMap(partyType: 'CUSTOMER' | 'SUPPLIER') {
 async function resolveKhataAccountId(
   partyType: 'CUSTOMER' | 'SUPPLIER',
   partyId: string,
-): Promise<string | null> {
-  const res = await khata.listKhataAccounts({ partyType, limit: 100 });
-  return res.data.find((a) => a.partyId === partyId)?.id ?? null;
+): Promise<string> {
+  const account = await khata.ensureKhataAccount({ partyType, partyId });
+  return account.id;
 }
 
 export function useCustomersQuery(
@@ -129,15 +129,12 @@ export function useCreateCustomerMutation() {
       });
 
       if (input.initialDue && input.initialDue > 0) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.khata.accounts() });
         const accountId = await resolveKhataAccountId('CUSTOMER', customer.id);
-        if (accountId) {
-          await khata.recordKhataAdjustment(accountId, {
+        await khata.recordKhataAdjustment(accountId, {
             type: 'DEBIT',
             amountCents: takaToCents(input.initialDue),
             description: 'প্রারম্ভিক বকেয়া',
           });
-        }
       }
 
       return customer;
@@ -177,20 +174,18 @@ export function useAddLedgerEntryMutation() {
     mutationFn: async ({
       customerId,
       input,
+      paymentMode,
     }: {
       customerId: string;
       input: LedgerEntryInput;
+      paymentMode?: string;
     }) => {
-      let accountId = await resolveKhataAccountId('CUSTOMER', customerId);
-
-      if (!accountId) {
-        throw new Error('খাতা অ্যাকাউন্ট পাওয়া যায়নি। প্রথমে বিক্রয় রেকর্ড করুন।');
-      }
+      const accountId = await resolveKhataAccountId('CUSTOMER', customerId);
 
       if (input.type === 'collect') {
         await khata.recordCollection(accountId, {
           amountCents: takaToCents(input.amount),
-          method: 'CASH',
+          method: paymentMode ? toPaymentMethod(paymentMode) : 'CASH',
           notes: input.description,
         });
       } else {

@@ -52,17 +52,18 @@ export function CustomerKhata() {
         customerId: selectedCustomerId,
         input: {
           amount: data.amount,
-          type: 'collect', // collect represents payments received
+          type: 'collect',
           description: `বকেয়া আদায় (${
-            data.paymentMode === 'cash' 
-              ? 'নগদ ক্যাশ' 
-              : data.paymentMode === 'bkash' 
-              ? 'বিকাশ' 
-              : data.paymentMode === 'nagad' 
-              ? 'নগদ' 
+            data.paymentMode === 'cash'
+              ? 'নগদ ক্যাশ'
+              : data.paymentMode === 'bkash'
+              ? 'বিকাশ'
+              : data.paymentMode === 'nagad'
+              ? 'নগদ'
               : 'ব্যাংক'
           })${data.transactionId ? ` - আইডি: ${data.transactionId}` : ''}. ${data.notes || ''}`,
         },
+        paymentMode: data.paymentMode,
       },
       {
         onSuccess: () => {

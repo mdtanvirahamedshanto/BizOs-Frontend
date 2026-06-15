@@ -150,6 +150,7 @@ export type {
   RecordCollectionRequest,
   RecordRepaymentRequest,
   KhataAdjustmentRequest,
+  EnsureKhataAccountRequest,
 } from './modules/khata.api';
 
 // Expenses

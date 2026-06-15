@@ -33,7 +33,7 @@ export function QuickActions() {
     {
       label: 'খরচ এন্ট্রি করুন',
       sub: 'Add Expense',
-      href: '/dashboard/ledger',
+      href: '/dashboard/expenses',
       icon: FilePlus,
       color: 'bg-amber-600 text-white hover:bg-amber-700',
     },

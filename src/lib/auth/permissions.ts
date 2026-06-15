@@ -13,6 +13,8 @@ export type Permission =
   | 'inventory:write'
   | 'purchases:read'
   | 'purchases:write'
+  | 'expenses:read'
+  | 'expenses:write'
   | 'ledger:read'
   | 'ledger:write'
   | 'reports:read'
@@ -26,6 +28,8 @@ const UI_PERMISSION_REQUIREMENTS: Record<Permission, string[]> = {
   'inventory:write': ['products.create', 'products.update'],
   'purchases:read': ['purchases.read'],
   'purchases:write': ['purchases.create', 'purchases.update'],
+  'expenses:read': ['expenses.read'],
+  'expenses:write': ['expenses.write', 'expenses.create'],
   'ledger:read': ['khata.read'],
   'ledger:write': ['khata.write', 'khata.update'],
   'reports:read': ['reports.read'],

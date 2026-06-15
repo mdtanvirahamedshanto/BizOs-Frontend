@@ -15,6 +15,7 @@ import {
   ChevronRight, 
   Store,
   Truck,
+  Receipt,
   MapPin,
   ChevronsUpDown,
   Smartphone,
@@ -66,6 +67,13 @@ const NAVIGATION_ITEMS: NavItem[] = [
     href: '/dashboard/ledger',
     icon: BookOpen,
     permission: 'ledger:read',
+  },
+  {
+    name: 'Expenses',
+    banglaName: 'খরচ ব্যবস্থাপনা',
+    href: '/dashboard/expenses',
+    icon: Receipt,
+    permission: 'expenses:read',
   },
   {
     name: 'Mobile Services',
