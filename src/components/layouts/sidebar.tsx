@@ -16,7 +16,8 @@ import {
   Store,
   MapPin,
   ChevronsUpDown,
-  Smartphone
+  Smartphone,
+  Send
 } from 'lucide-react';
 import { useUiStore } from '@/stores/use-ui';
 import { useTenantStore } from '@/stores/use-tenant';
@@ -63,6 +64,12 @@ const NAVIGATION_ITEMS: NavItem[] = [
     banglaName: 'মোবাইল সার্ভিস',
     href: '/dashboard/mobile-services',
     icon: Smartphone,
+  },
+  {
+    name: 'Telegram',
+    banglaName: 'টেলিগ্রাম বট',
+    href: '/dashboard/telegram',
+    icon: Send,
   },
   {
     name: 'Customers',
