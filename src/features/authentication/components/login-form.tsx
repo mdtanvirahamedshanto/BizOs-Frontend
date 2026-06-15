@@ -2,15 +2,18 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Phone, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { loginSchema, LoginInput } from '../types';
 import { useLoginMutation } from '../api/auth-api';
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/dashboard';
+
   const [showPassword, setShowPassword] = useState(false);
   const { mutate: loginUser, isPending, error } = useLoginMutation();
 
@@ -21,7 +24,7 @@ export function LoginForm() {
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      phone: '',
+      email: '',
       password: '',
     },
   });
@@ -29,7 +32,7 @@ export function LoginForm() {
   const onSubmit = (data: LoginInput) => {
     loginUser(data, {
       onSuccess: () => {
-        router.push('/dashboard');
+        router.push(redirectTo);
       },
     });
   };
@@ -47,39 +50,37 @@ export function LoginForm() {
 
       {error && (
         <div className="mb-4 rounded-lg bg-red-50 border-l-4 border-destructive p-3 text-xs font-semibold text-destructive">
-          {error.message || 'মোবাইল নম্বর অথবা পাসওয়ার্ড ভুল হয়েছে। আবার চেষ্টা করুন।'}
+          {error.message || 'ইমেইল অথবা পাসওয়ার্ড ভুল হয়েছে। আবার চেষ্টা করুন।'}
         </div>
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* Mobile Number Field */}
         <div>
-          <label htmlFor="phone" className="block text-sm font-semibold text-slate-700 mb-1.5">
-            মোবাইল নম্বর <span className="text-destructive">*</span>
+          <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-1.5">
+            ইমেইল <span className="text-destructive">*</span>
           </label>
           <div className="relative">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <Phone className="h-4 w-4 text-slate-400" />
+              <Mail className="h-4 w-4 text-slate-400" />
             </div>
             <input
-              id="phone"
-              type="tel"
-              inputMode="tel"
-              placeholder="017xxxxxxxx"
-              {...register('phone')}
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              {...register('email')}
               className={`h-11 w-full rounded-lg border pl-9 pr-3 text-sm outline-none transition-all ${
-                errors.phone
+                errors.email
                   ? 'border-destructive focus:ring-1 focus:ring-destructive'
                   : 'border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary'
               }`}
             />
           </div>
-          {errors.phone && (
-            <p className="text-xs text-destructive mt-1 font-semibold">{errors.phone.message}</p>
+          {errors.email && (
+            <p className="text-xs text-destructive mt-1 font-semibold">{errors.email.message}</p>
           )}
         </div>
 
-        {/* Password Field */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label htmlFor="password" className="text-sm font-semibold text-slate-700">
@@ -99,7 +100,8 @@ export function LoginForm() {
             <input
               id="password"
               type={showPassword ? 'text' : 'password'}
-              placeholder="******"
+              autoComplete="current-password"
+              placeholder="********"
               {...register('password')}
               className={`h-11 w-full rounded-lg border pl-9 pr-10 text-sm outline-none transition-all ${
                 errors.password
@@ -120,7 +122,6 @@ export function LoginForm() {
           )}
         </div>
 
-        {/* Submit Button */}
         <button
           type="submit"
           disabled={isPending}
@@ -137,11 +138,17 @@ export function LoginForm() {
         </button>
       </form>
 
-      <div className="text-center mt-6 pt-4 border-t border-slate-100">
+      <div className="text-center mt-6 pt-4 border-t border-slate-100 space-y-2">
         <p className="text-xs text-slate-500 font-medium">
           আপনার কোনো অ্যাকাউন্ট নেই?{' '}
           <Link href="/register" className="font-bold text-primary hover:underline">
             নতুন অ্যাকাউন্ট খুলুন
+          </Link>
+        </p>
+        <p className="text-xs text-slate-400">
+          ফোন দিয়ে লগইন?{' '}
+          <Link href="/otp-verify" className="font-semibold text-primary hover:underline">
+            OTP ভেরিফিকেশন
           </Link>
         </p>
       </div>

@@ -12,6 +12,7 @@ export {
   useRegisterMutation,
   useLoginMutation,
   useLogoutMutation,
+  useRefreshTokenMutation,
   useChangePasswordMutation,
   useRequestPasswordResetMutation,
   useConfirmPasswordResetMutation,

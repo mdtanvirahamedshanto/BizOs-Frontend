@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   Menu, 
   Search, 
@@ -19,6 +19,7 @@ import {
 import { useUiStore } from '@/stores/use-ui';
 import { useOffline } from '@/hooks/use-offline';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useLogoutMutation } from '@/features/authentication/api/auth-api';
 
 // Breadcrumb path translation mapping
 const PATH_TRANSLATIONS: Record<string, string> = {
@@ -32,11 +33,21 @@ const PATH_TRANSLATIONS: Record<string, string> = {
 };
 
 export function Topbar() {
+  const router = useRouter();
   const pathname = usePathname();
   const toggleSidebar = useUiStore((state) => state.toggleSidebar);
   const { theme, setTheme } = useUiStore();
   const isOffline = useOffline();
   const { user, role } = usePermissions();
+  const { mutate: logout, isPending: isLoggingOut } = useLogoutMutation();
+
+  const handleLogout = () => {
+    logout(undefined, {
+      onSettled: () => {
+        router.push('/login');
+      },
+    });
+  };
 
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -202,7 +213,7 @@ export function Topbar() {
             <div className="absolute right-0 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-2 shadow-xl animate-in fade-in-50 slide-in-from-top-5">
               <div className="border-b border-slate-100 px-3 py-2.5 mb-1">
                 <p className="text-sm font-semibold text-slate-800 truncate">{user?.name}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{user?.phone}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
                 <div className="mt-1.5 flex items-center gap-1 text-[10px] font-semibold text-primary">
                   <Shield className="h-3 w-3" />
                   <span>{role === 'Owner' ? 'মালিক একাউন্ট' : role === 'Manager' ? 'ম্যানেজার' : 'ক্যাশিয়ার'}</span>
@@ -236,11 +247,12 @@ export function Topbar() {
 
               {/* Logout Button */}
               <button
-                onClick={() => alert('লগআউট করা হচ্ছে...')}
-                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
               >
                 <LogOut className="h-4 w-4" />
-                <span>লগ আউট</span>
+                <span>{isLoggingOut ? 'লগ আউট হচ্ছে...' : 'লগ আউট'}</span>
               </button>
             </div>
           )}

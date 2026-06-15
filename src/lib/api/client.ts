@@ -9,23 +9,26 @@ import axios, {
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from 'axios';
-import { ApiError, ApiErrorBody } from './types';
+import { ApiError, ApiErrorBody, ApiErrorEnvelope, ApiSuccessEnvelope } from './types';
+import {
+  AUTH_COOKIES,
+  deleteAuthCookie,
+  getAuthCookie,
+  setAuthCookie,
+} from '@/lib/auth/cookies';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? 'https://api.bizos.com/v1';
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
 
 const DEFAULT_TIMEOUT = 15_000; // 15 s
 
 // ─── Token Storage Helpers ───────────────────────────────────────────────────
-// Cookies are the source of truth (Next.js middleware reads them for SSR guards).
-// We also keep a short-lived in-memory copy to avoid repeated cookie parsing.
 
 let _inMemoryAccessToken: string | null = null;
 let _isRefreshing = false;
 
-/** Queue of resolve/reject callbacks waiting for a token refresh to finish */
 type RefreshSubscriber = (token: string | null) => void;
 let _refreshSubscribers: RefreshSubscriber[] = [];
 
@@ -38,49 +41,44 @@ function notifyRefreshSubscribers(token: string | null) {
   _refreshSubscribers = [];
 }
 
-// ─── Cookie Helpers (client-side only) ───────────────────────────────────────
-
-function getCookie(name: string): string | null {
-  if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
-  return match ? decodeURIComponent(match[1]) : null;
-}
-
-function setCookie(name: string, value: string, days = 1) {
-  if (typeof document === 'undefined') return;
-  const expires = new Date(Date.now() + days * 864e5).toUTCString();
-  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Strict; Secure`;
-}
-
-function deleteCookie(name: string) {
-  if (typeof document === 'undefined') return;
-  document.cookie = `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Strict; Secure`;
+function unwrapEnvelope<T>(payload: unknown): T {
+  if (
+    payload &&
+    typeof payload === 'object' &&
+    'success' in payload &&
+    (payload as ApiSuccessEnvelope<T>).success === true &&
+    'data' in payload
+  ) {
+    return (payload as ApiSuccessEnvelope<T>).data;
+  }
+  return payload as T;
 }
 
 // ─── Token API ───────────────────────────────────────────────────────────────
 
 export const tokenStore = {
   getAccessToken(): string | null {
-    return _inMemoryAccessToken ?? getCookie('bizos_token');
+    return _inMemoryAccessToken ?? getAuthCookie(AUTH_COOKIES.accessToken);
   },
   getRefreshToken(): string | null {
-    return getCookie('bizos_refresh_token');
+    return getAuthCookie(AUTH_COOKIES.refreshToken);
   },
   setTokens(accessToken: string, refreshToken?: string) {
     _inMemoryAccessToken = accessToken;
-    setCookie('bizos_token', accessToken, 1);
-    if (refreshToken) setCookie('bizos_refresh_token', refreshToken, 7);
+    setAuthCookie(AUTH_COOKIES.accessToken, accessToken, 1);
+    if (refreshToken) {
+      setAuthCookie(AUTH_COOKIES.refreshToken, refreshToken, 7);
+    }
   },
   clearTokens() {
     _inMemoryAccessToken = null;
-    deleteCookie('bizos_token');
-    deleteCookie('bizos_refresh_token');
-    deleteCookie('bizos_user_info');
+    deleteAuthCookie(AUTH_COOKIES.accessToken);
+    deleteAuthCookie(AUTH_COOKIES.refreshToken);
+    deleteAuthCookie(AUTH_COOKIES.userInfo);
   },
 };
 
 // ─── Tenant Store Accessor ────────────────────────────────────────────────────
-// Lazy import avoids circular dependency with Zustand stores.
 
 function getTenantHeaders(): Record<string, string> {
   try {
@@ -105,20 +103,18 @@ export const apiClient: AxiosInstance = axios.create({
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
-  withCredentials: false, // JWT is header-based, not cookie-sent to API
+  withCredentials: false,
 });
 
 // ─── Request Interceptor ─────────────────────────────────────────────────────
 
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // 1. Inject Bearer token
     const token = tokenStore.getAccessToken();
     if (token) {
       config.headers.set('Authorization', `Bearer ${token}`);
     }
 
-    // 2. Inject multi-tenant context headers
     if (typeof window !== 'undefined') {
       const tenantHeaders = getTenantHeaders();
       Object.entries(tenantHeaders).forEach(([k, v]) => config.headers.set(k, v));
@@ -132,19 +128,19 @@ apiClient.interceptors.request.use(
 // ─── Response Interceptor ────────────────────────────────────────────────────
 
 apiClient.interceptors.response.use(
-  // Success path — pass through
-  (response: AxiosResponse) => response,
+  (response: AxiosResponse) => {
+    if (response.status === 204) return response;
+    response.data = unwrapEnvelope(response.data);
+    return response;
+  },
 
-  // Error path — handle 401 / normalize errors
-  async (error: AxiosError<ApiErrorBody>) => {
+  async (error: AxiosError<ApiErrorEnvelope | ApiErrorBody>) => {
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
 
-    // ── 401 Unauthorized: attempt silent token refresh ──
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       if (_isRefreshing) {
-        // Another request is already refreshing — queue this one
         return new Promise((resolve, reject) => {
           subscribeToRefresh((newToken) => {
             if (newToken && originalRequest.headers) {
@@ -163,28 +159,36 @@ apiClient.interceptors.response.use(
         const refreshToken = tokenStore.getRefreshToken();
         if (!refreshToken) throw new Error('No refresh token');
 
-        // Call the refresh endpoint directly (no interceptor loop)
-        const response = await axios.post<{ accessToken: string; refreshToken: string }>(
+        const response = await axios.post(
           `${BASE_URL}/auth/refresh`,
           { refreshToken },
           { headers: { 'Content-Type': 'application/json' } },
         );
 
-        const { accessToken, refreshToken: newRefreshToken } = response.data;
-        tokenStore.setTokens(accessToken, newRefreshToken);
-        notifyRefreshSubscribers(accessToken);
+        const tokens = unwrapEnvelope<{
+          accessToken: string;
+          refreshToken: string;
+          expiresIn?: number;
+        }>(response.data);
 
-        // Retry the original request with the new token
+        tokenStore.setTokens(tokens.accessToken, tokens.refreshToken);
+
+        const { applyRefreshedTokens } = await import('@/lib/auth/session');
+        applyRefreshedTokens(tokens.accessToken, tokens.refreshToken);
+
+        notifyRefreshSubscribers(tokens.accessToken);
+
         if (originalRequest.headers) {
-          (originalRequest.headers as Record<string, string>)['Authorization'] = `Bearer ${accessToken}`;
+          (originalRequest.headers as Record<string, string>)['Authorization'] = `Bearer ${tokens.accessToken}`;
         }
         return apiClient(originalRequest);
       } catch {
-        // Refresh failed — clear session and redirect to login
         tokenStore.clearTokens();
         notifyRefreshSubscribers(null);
 
         if (typeof window !== 'undefined') {
+          const { clearSession } = await import('@/lib/auth/session');
+          clearSession();
           window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
         }
 
@@ -196,24 +200,34 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // ── Normalize all other errors into ApiError ──
     const status = error.response?.status ?? 0;
-    const body = error.response?.data;
-    const message =
-      body?.message ??
-      (error.code === 'ECONNABORTED' ? 'Request timed out. Please try again.' : 'An unexpected network error occurred.');
+    const rawBody = error.response?.data;
 
-    return Promise.reject(
-      new ApiError(message, status, body?.code, body?.details),
-    );
+    let message = 'An unexpected network error occurred.';
+    let code: string | undefined;
+    let details: Record<string, string[]> | undefined;
+
+    if (rawBody && typeof rawBody === 'object') {
+      if ('success' in rawBody && (rawBody as ApiErrorEnvelope).success === false) {
+        const errBody = (rawBody as ApiErrorEnvelope).error;
+        message = errBody.message ?? message;
+        code = errBody.code;
+        details = errBody.details;
+      } else if ('message' in rawBody) {
+        message = (rawBody as ApiErrorBody).message;
+        code = (rawBody as ApiErrorBody).code;
+        details = (rawBody as ApiErrorBody).details;
+      }
+    } else if (error.code === 'ECONNABORTED') {
+      message = 'Request timed out. Please try again.';
+    }
+
+    return Promise.reject(new ApiError(message, status, code, details));
   },
 );
 
-// ─── Typed Request Helpers ────────────────────────────────────────────────────
-
 /**
  * Build a query string from an object, omitting undefined / null values.
- * Accepts any typed query-param interface without requiring an index signature.
  */
 export function buildParams(params?: object): Record<string, string> {
   const result: Record<string, string> = {};

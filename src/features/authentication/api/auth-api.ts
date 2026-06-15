@@ -1,135 +1,131 @@
+/**
+ * Feature-level auth hooks — thin adapters over centralized TanStack Query hooks.
+ * Maps form DTOs to backend API contracts and surfaces ApiError messages.
+ */
+
 import { useMutation } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api-client';
-import { useAuthStore, UserInfo } from '@/stores/use-auth';
-import { 
-  LoginInput, 
-  RegisterInput, 
-  OtpInput, 
-  ForgotPasswordInput, 
-  ResetPasswordInput 
+import { ApiError } from '@/lib/api/types';
+import {
+  useLoginMutation as useLoginMutationBase,
+  useRegisterMutation as useRegisterMutationBase,
+  useVerifyOtpMutation as useVerifyOtpMutationBase,
+  useRequestOtpMutation as useRequestOtpMutationBase,
+  useRequestPasswordResetMutation,
+  useConfirmPasswordResetMutation,
+  useLogoutMutation as useLogoutMutationBase,
+} from '@/hooks/queries/use-auth-query';
+import type {
+  LoginInput,
+  RegisterInput,
+  OtpInput,
+  ForgotPasswordInput,
+  ResetPasswordInput,
 } from '../types';
 
-interface AuthResponse {
-  user: UserInfo;
-  accessToken: string;
-  refreshToken: string;
+function toErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError) return error.message;
+  if (error instanceof Error) return error.message;
+  return fallback;
 }
 
-/**
- * Hook to execute user login mutation
- */
 export function useLoginMutation() {
-  const login = useAuthStore((state) => state.login);
-
-  return useMutation({
-    mutationFn: async (data: LoginInput) => {
-      try {
-        // Actual API endpoint invocation
-        return await apiClient.post<AuthResponse>('/auth/login', data);
-      } catch (error) {
-        // Prototyping simulation fallback in local development
-        console.warn('[Auth API] Login request failed, triggering simulation fallback.', error);
-        
-        // Simulate a delay
-        await new Promise((resolve) => setTimeout(resolve, 800));
-
-        // Mock response
-        return {
-          user: {
-            id: 'usr-simulated',
-            name: 'মোঃ শরিফুল ইসলাম (Sharif)',
-            phone: data.phone,
-            role: 'Owner' as const,
-          },
-          accessToken: 'simulated_jwt_access_token',
-          refreshToken: 'simulated_jwt_refresh_token',
-        };
-      }
-    },
-    onSuccess: (data) => {
-      login(data.user, data.accessToken, data.refreshToken);
-    },
-  });
+  const mutation = useLoginMutationBase();
+  return {
+    ...mutation,
+    mutate: (
+      data: LoginInput,
+      options?: Parameters<typeof mutation.mutate>[1],
+    ) => mutation.mutate({ email: data.email, password: data.password }, options),
+    mutateAsync: (data: LoginInput) =>
+      mutation.mutateAsync({ email: data.email, password: data.password }),
+  };
 }
 
-/**
- * Hook to execute merchant registration mutation
- */
 export function useRegisterMutation() {
-  return useMutation({
-    mutationFn: async (data: RegisterInput) => {
-      try {
-        return await apiClient.post<{ message: string }>('/auth/register', data);
-      } catch (error) {
-        console.warn('[Auth API] Register request failed, triggering simulation.', error);
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        return { message: 'OTP sent to mobile number' };
-      }
-    },
-  });
+  const mutation = useRegisterMutationBase();
+  return {
+    ...mutation,
+    mutate: (
+      data: RegisterInput,
+      options?: Parameters<typeof mutation.mutate>[1],
+    ) =>
+      mutation.mutate(
+        {
+          email: data.email,
+          password: data.password,
+          name: data.name,
+          shopName: data.shopName,
+        },
+        options,
+      ),
+    mutateAsync: (data: RegisterInput) =>
+      mutation.mutateAsync({
+        email: data.email,
+        password: data.password,
+        name: data.name,
+        shopName: data.shopName,
+      }),
+  };
 }
 
-/**
- * Hook to execute OTP code verification mutation
- */
 export function useVerifyOtpMutation() {
-  const login = useAuthStore((state) => state.login);
-
-  return useMutation({
-    mutationFn: async (data: { phone: string; code: string }) => {
-      try {
-        return await apiClient.post<AuthResponse>('/auth/otp-verify', data);
-      } catch (error) {
-        console.warn('[Auth API] OTP verification failed, triggering simulation.', error);
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        return {
-          user: {
-            id: 'usr-simulated',
-            name: 'মোঃ শরিফুল ইসলাম (Sharif)',
-            phone: data.phone,
-            role: 'Owner' as const,
-          },
-          accessToken: 'simulated_jwt_access_token',
-          refreshToken: 'simulated_jwt_refresh_token',
-        };
-      }
-    },
-    onSuccess: (data) => {
-      login(data.user, data.accessToken, data.refreshToken);
-    },
-  });
+  const mutation = useVerifyOtpMutationBase();
+  return {
+    ...mutation,
+    mutate: (
+      data: { phone: string; code: string; shopId: string },
+      options?: Parameters<typeof mutation.mutate>[1],
+    ) =>
+      mutation.mutate(
+        { phone: data.phone, shopId: data.shopId, otp: data.code },
+        options,
+      ),
+    mutateAsync: (data: { phone: string; code: string; shopId: string }) =>
+      mutation.mutateAsync({ phone: data.phone, shopId: data.shopId, otp: data.code }),
+  };
 }
 
-/**
- * Hook to execute forgot password verification request
- */
+export function useRequestOtpMutation() {
+  const mutation = useRequestOtpMutationBase();
+  return {
+    ...mutation,
+    mutate: (
+      data: { phone: string; shopId: string },
+      options?: Parameters<typeof mutation.mutate>[1],
+    ) => mutation.mutate(data, options),
+  };
+}
+
 export function useForgotPasswordMutation() {
-  return useMutation({
-    mutationFn: async (data: ForgotPasswordInput) => {
-      try {
-        return await apiClient.post<{ message: string }>('/auth/forgot-password', data);
-      } catch (error) {
-        console.warn('[Auth API] Forgot-password failed, triggering simulation.', error);
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        return { message: 'OTP sent to mobile number' };
-      }
-    },
-  });
+  const mutation = useRequestPasswordResetMutation();
+  return {
+    ...mutation,
+    mutate: (
+      data: ForgotPasswordInput,
+      options?: Parameters<typeof mutation.mutate>[1],
+    ) => mutation.mutate({ email: data.email, shopId: data.shopId }, options),
+    mutateAsync: (data: ForgotPasswordInput) =>
+      mutation.mutateAsync({ email: data.email, shopId: data.shopId }),
+  };
 }
 
-/**
- * Hook to execute credentials reset mutation
- */
 export function useResetPasswordMutation() {
-  return useMutation({
-    mutationFn: async (data: Omit<ResetPasswordInput, 'confirmPassword'>) => {
-      try {
-        return await apiClient.post<{ message: string }>('/auth/reset-password', data);
-      } catch (error) {
-        console.warn('[Auth API] Reset-password failed, triggering simulation.', error);
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        return { message: 'Password reset completed successfully' };
-      }
-    },
-  });
+  const mutation = useConfirmPasswordResetMutation();
+  return {
+    ...mutation,
+    mutate: (
+      data: Pick<ResetPasswordInput, 'token' | 'newPassword'>,
+      options?: Parameters<typeof mutation.mutate>[1],
+    ) =>
+      mutation.mutate(
+        { token: data.token, newPassword: data.newPassword },
+        options,
+      ),
+  };
 }
+
+export function useLogoutMutation() {
+  return useLogoutMutationBase();
+}
+
+export { toErrorMessage };

@@ -90,6 +90,19 @@ export type TransactionStatus = 'PENDING' | 'COMPLETED' | 'FAILED';
 
 // ─── Generic API Response Wrapper ────────────────────────────────────────────
 
+/** Backend success envelope: { success: true, data: T, meta?: ... } */
+export interface ApiSuccessEnvelope<T> {
+  success: true;
+  data: T;
+  meta?: Record<string, unknown>;
+}
+
+/** Backend error envelope: { success: false, error: { message, code?, details? } } */
+export interface ApiErrorEnvelope {
+  success: false;
+  error: ApiErrorBody;
+}
+
 export interface ApiResponse<T> {
   data: T;
   message?: string;

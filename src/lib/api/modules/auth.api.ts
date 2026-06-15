@@ -2,7 +2,7 @@
 // BizOS API SDK — Auth Module
 // =============================================================================
 
-import { apiClient } from '../client';
+import { apiClient, tokenStore } from '../client';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -111,7 +111,8 @@ export async function refreshToken(data: RefreshTokenRequest): Promise<AuthToken
  * Revoke the current session (server-side logout)
  */
 export async function logout(): Promise<void> {
-  await apiClient.post('/auth/logout');
+  const refreshToken = tokenStore.getRefreshToken();
+  await apiClient.post('/auth/logout', refreshToken ? { refreshToken } : undefined);
 }
 
 /**

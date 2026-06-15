@@ -1,66 +1,46 @@
-import { useAuthStore, UserRole } from '@/stores/use-auth';
+import { useAuthStore } from '@/stores/use-auth';
+import {
+  checkUiPermission,
+  deriveRoleFromPermissions,
+  getEffectivePermissions,
+  hasBackendPermission as checkBackendPermission,
+  type Permission,
+} from '@/lib/auth/permissions';
 
-// Define granular permission types
-export type Permission = 
-  | 'pos:checkout'
-  | 'pos:void'
-  | 'inventory:read'
-  | 'inventory:write'
-  | 'ledger:read'
-  | 'ledger:write'
-  | 'reports:read'
-  | 'settings:write';
-
-// Pre-defined role permissions mapping
-const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
-  Owner: [
-    'pos:checkout',
-    'pos:void',
-    'inventory:read',
-    'inventory:write',
-    'ledger:read',
-    'ledger:write',
-    'reports:read',
-    'settings:write',
-  ],
-  Manager: [
-    'pos:checkout',
-    'pos:void',
-    'inventory:read',
-    'inventory:write',
-    'ledger:read',
-    'ledger:write',
-    'reports:read',
-  ],
-  Cashier: [
-    'pos:checkout',
-    'inventory:read',
-    'ledger:read', // Read access to record client credits
-  ],
-};
+export type { Permission };
 
 /**
- * Custom hook to verify roles and permissions.
+ * RBAC hook backed by backend permission strings from /auth/me.
+ * UI permission keys (e.g. pos:checkout) map to backend resource.action checks.
  */
 export function usePermissions() {
   const user = useAuthStore((state) => state.user);
+  const permissions = user?.permissions ?? [];
 
   const hasPermission = (permission: Permission): boolean => {
     if (!user) return false;
-    const permissions = ROLE_PERMISSIONS[user.role];
-    return permissions.includes(permission);
+    return checkUiPermission(permissions, permission);
   };
 
-  const hasRole = (roles: UserRole[]): boolean => {
-    if (!user) return false;
-    return roles.includes(user.role);
+  const hasAnyPermission = (required: Permission[]): boolean => {
+    return required.some((permission) => hasPermission(permission));
   };
+
+  const hasBackendPermission = (required: string): boolean => {
+    if (!user) return false;
+    return checkBackendPermission(permissions, required);
+  };
+
+  const role = user?.role ?? deriveRoleFromPermissions(permissions);
 
   return {
     user,
-    role: user?.role || null,
+    role,
+    permissions,
     hasPermission,
-    hasRole,
-    allPermissions: user ? ROLE_PERMISSIONS[user.role] : [],
+    hasAnyPermission,
+    hasBackendPermission,
+    allPermissions: getEffectivePermissions(permissions),
+    isOwner: permissions.includes('*') || permissions.includes('*:*:*'),
   };
 }

@@ -1,13 +1,15 @@
 import { create } from 'zustand';
+import { AUTH_COOKIES, deleteAuthCookie, getAuthCookie, setAuthCookie } from '@/lib/auth/cookies';
 
 export type UserRole = 'Owner' | 'Manager' | 'Cashier';
 
 export interface UserInfo {
   id: string;
   name: string;
-  phone: string;
+  email: string;
   role: UserRole;
-  businessId?: string;
+  shopId: string;
+  permissions: string[];
 }
 
 interface AuthState {
@@ -15,39 +17,17 @@ interface AuthState {
   accessToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  
-  // Actions
-  login: (user: UserInfo, accessToken: string, refreshToken: string) => void;
+
+  establishSession: (user: UserInfo, accessToken: string, refreshToken: string) => void;
+  setUser: (user: UserInfo) => void;
   logout: () => void;
   setAccessToken: (token: string) => void;
   hydrateSession: () => void;
 }
 
-// Cookie helpers since standard document.cookie is client-only
-const setCookie = (name: string, value: string, days = 7) => {
-  if (typeof window === 'undefined') return;
-  const date = new Date();
-  date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
-  const expires = `; expires=${date.toUTCString()}`;
-  document.cookie = `${name}=${encodeURIComponent(value)}${expires}; path=/; SameSite=Strict; Secure`;
-};
-
-const getCookie = (name: string): string | null => {
-  if (typeof window === 'undefined') return null;
-  const nameEQ = `${name}=`;
-  const ca = document.cookie.split(';');
-  for (let i = 0; i < ca.length; i++) {
-    let c = ca[i];
-    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-    if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
-  }
-  return null;
-};
-
-const deleteCookie = (name: string) => {
-  if (typeof window === 'undefined') return;
-  document.cookie = `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Strict; Secure`;
-};
+function persistUserCookie(user: UserInfo) {
+  setAuthCookie(AUTH_COOKIES.userInfo, JSON.stringify(user), 7);
+}
 
 export const useAuthStore = create<AuthState>()((set) => ({
   user: null,
@@ -55,11 +35,10 @@ export const useAuthStore = create<AuthState>()((set) => ({
   isAuthenticated: false,
   isLoading: true,
 
-  login: (user, accessToken, refreshToken) => {
-    // Write tokens to cookies so the Next.js Edge Middleware can inspect them instantly
-    setCookie('bizos_token', accessToken, 1); // 1 day
-    setCookie('bizos_refresh_token', refreshToken, 7); // 7 days
-    setCookie('bizos_user_info', JSON.stringify(user), 7);
+  establishSession: (user, accessToken, refreshToken) => {
+    setAuthCookie(AUTH_COOKIES.accessToken, accessToken, 1);
+    setAuthCookie(AUTH_COOKIES.refreshToken, refreshToken, 7);
+    persistUserCookie(user);
 
     set({
       user,
@@ -69,11 +48,15 @@ export const useAuthStore = create<AuthState>()((set) => ({
     });
   },
 
+  setUser: (user) => {
+    persistUserCookie(user);
+    set({ user });
+  },
+
   logout: () => {
-    // Purge cookies
-    deleteCookie('bizos_token');
-    deleteCookie('bizos_refresh_token');
-    deleteCookie('bizos_user_info');
+    deleteAuthCookie(AUTH_COOKIES.accessToken);
+    deleteAuthCookie(AUTH_COOKIES.refreshToken);
+    deleteAuthCookie(AUTH_COOKIES.userInfo);
 
     set({
       user: null,
@@ -84,7 +67,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
   },
 
   setAccessToken: (token) => {
-    setCookie('bizos_token', token, 1);
+    setAuthCookie(AUTH_COOKIES.accessToken, token, 1);
     set({ accessToken: token });
   },
 
@@ -92,9 +75,9 @@ export const useAuthStore = create<AuthState>()((set) => ({
     if (typeof window === 'undefined') return;
 
     try {
-      const token = getCookie('bizos_token');
-      const userInfoStr = getCookie('bizos_user_info');
-      
+      const token = getAuthCookie(AUTH_COOKIES.accessToken);
+      const userInfoStr = getAuthCookie(AUTH_COOKIES.userInfo);
+
       if (token && userInfoStr) {
         const user = JSON.parse(userInfoStr) as UserInfo;
         set({

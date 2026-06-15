@@ -2,10 +2,10 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { User, Phone, Lock, Store, FileSpreadsheet, Loader2 } from 'lucide-react';
+import { User, Mail, Lock, Store, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { registerSchema, RegisterInput } from '../types';
 import { useRegisterMutation } from '../api/auth-api';
 
@@ -22,6 +22,9 @@ const BUSINESS_TYPES = [
 
 export function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/dashboard';
+
   const { mutate: registerUser, isPending, error } = useRegisterMutation();
 
   const {
@@ -32,17 +35,16 @@ export function RegisterForm() {
     resolver: zodResolver(registerSchema),
     defaultValues: {
       name: '',
-      phone: '',
+      email: '',
       password: '',
-      businessName: '',
+      shopName: '',
     },
   });
 
   const onSubmit = (data: RegisterInput) => {
     registerUser(data, {
       onSuccess: () => {
-        // Redirect to OTP verification page carrying the phone number
-        router.push(`/otp-verify?phone=${encodeURIComponent(data.phone)}`);
+        router.push(redirectTo);
       },
     });
   };
@@ -65,7 +67,6 @@ export function RegisterForm() {
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* Full Name */}
         <div>
           <label htmlFor="name" className="block text-sm font-semibold text-slate-700 mb-1.5">
             আপনার নাম <span className="text-destructive">*</span>
@@ -91,37 +92,35 @@ export function RegisterForm() {
           )}
         </div>
 
-        {/* Mobile Phone */}
         <div>
-          <label htmlFor="phone" className="block text-sm font-semibold text-slate-700 mb-1.5">
-            মোবাইল নম্বর <span className="text-destructive">*</span>
+          <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-1.5">
+            ইমেইল <span className="text-destructive">*</span>
           </label>
           <div className="relative">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <Phone className="h-4 w-4 text-slate-400" />
+              <Mail className="h-4 w-4 text-slate-400" />
             </div>
             <input
-              id="phone"
-              type="tel"
-              inputMode="tel"
-              placeholder="017xxxxxxxx"
-              {...register('phone')}
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              {...register('email')}
               className={`h-10 w-full rounded-lg border pl-9 pr-3 text-sm outline-none transition-all ${
-                errors.phone
+                errors.email
                   ? 'border-destructive focus:ring-1 focus:ring-destructive'
                   : 'border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary'
               }`}
             />
           </div>
-          {errors.phone && (
-            <p className="text-xs text-destructive mt-1 font-semibold">{errors.phone.message}</p>
+          {errors.email && (
+            <p className="text-xs text-destructive mt-1 font-semibold">{errors.email.message}</p>
           )}
         </div>
 
-        {/* Password */}
         <div>
           <label htmlFor="password" className="block text-sm font-semibold text-slate-700 mb-1.5">
-            পাসওয়ার্ড (কমপক্ষে ৬ অক্ষরের) <span className="text-destructive">*</span>
+            পাসওয়ার্ড (কমপক্ষে ৮ অক্ষরের) <span className="text-destructive">*</span>
           </label>
           <div className="relative">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -130,7 +129,8 @@ export function RegisterForm() {
             <input
               id="password"
               type="password"
-              placeholder="******"
+              autoComplete="new-password"
+              placeholder="********"
               {...register('password')}
               className={`h-10 w-full rounded-lg border pl-9 pr-3 text-sm outline-none transition-all ${
                 errors.password
@@ -144,9 +144,8 @@ export function RegisterForm() {
           )}
         </div>
 
-        {/* Business Name */}
         <div>
-          <label htmlFor="businessName" className="block text-sm font-semibold text-slate-700 mb-1.5">
+          <label htmlFor="shopName" className="block text-sm font-semibold text-slate-700 mb-1.5">
             ব্যবসা প্রতিষ্ঠানের নাম <span className="text-destructive">*</span>
           </label>
           <div className="relative">
@@ -154,26 +153,25 @@ export function RegisterForm() {
               <Store className="h-4 w-4 text-slate-400" />
             </div>
             <input
-              id="businessName"
+              id="shopName"
               type="text"
               placeholder="যেমন: করিম ব্রাদার্স এন্ড কোং"
-              {...register('businessName')}
+              {...register('shopName')}
               className={`h-10 w-full rounded-lg border pl-9 pr-3 text-sm outline-none transition-all ${
-                errors.businessName
+                errors.shopName
                   ? 'border-destructive focus:ring-1 focus:ring-destructive'
                   : 'border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary'
               }`}
             />
           </div>
-          {errors.businessName && (
-            <p className="text-xs text-destructive mt-1 font-semibold">{errors.businessName.message}</p>
+          {errors.shopName && (
+            <p className="text-xs text-destructive mt-1 font-semibold">{errors.shopName.message}</p>
           )}
         </div>
 
-        {/* Business Type dropdown */}
         <div>
           <label htmlFor="businessType" className="block text-sm font-semibold text-slate-700 mb-1.5">
-            ব্যবসার ধরন <span className="text-destructive">*</span>
+            ব্যবসার ধরন
           </label>
           <div className="relative">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -182,13 +180,9 @@ export function RegisterForm() {
             <select
               id="businessType"
               {...register('businessType')}
-              className={`h-10 w-full rounded-lg border pl-9 pr-3 text-sm bg-white outline-none transition-all ${
-                errors.businessType
-                  ? 'border-destructive focus:ring-1 focus:ring-destructive'
-                  : 'border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary'
-              }`}
+              className="h-10 w-full rounded-lg border pl-9 pr-3 text-sm bg-white outline-none transition-all border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary"
             >
-              <option value="">নির্বাচন করুন</option>
+              <option value="">নির্বাচন করুন (ঐচ্ছিক)</option>
               {BUSINESS_TYPES.map((type) => (
                 <option key={type.value} value={type.value}>
                   {type.label}
@@ -196,12 +190,8 @@ export function RegisterForm() {
               ))}
             </select>
           </div>
-          {errors.businessType && (
-            <p className="text-xs text-destructive mt-1 font-semibold">{errors.businessType.message}</p>
-          )}
         </div>
 
-        {/* Submit */}
         <button
           type="submit"
           disabled={isPending}

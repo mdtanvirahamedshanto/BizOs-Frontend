@@ -5,13 +5,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Phone, ArrowLeft, Loader2 } from 'lucide-react';
+import { Mail, ArrowLeft, Loader2 } from 'lucide-react';
 import { forgotPasswordSchema, ForgotPasswordInput } from '../types';
 import { useForgotPasswordMutation } from '../api/auth-api';
+import { useAuthStore } from '@/stores/use-auth';
 
 export function ForgotPasswordForm() {
   const router = useRouter();
-  const { mutate: forgotPassword, isPending, error } = useForgotPasswordMutation();
+  const user = useAuthStore((s) => s.user);
+  const { mutate: forgotPassword, isPending, error, isSuccess } = useForgotPasswordMutation();
 
   const {
     register,
@@ -20,15 +22,15 @@ export function ForgotPasswordForm() {
   } = useForm<ForgotPasswordInput>({
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: {
-      phone: '',
+      email: user?.email ?? '',
+      shopId: user?.shopId ?? '',
     },
   });
 
   const onSubmit = (data: ForgotPasswordInput) => {
     forgotPassword(data, {
       onSuccess: () => {
-        // Redirect to the Reset Password view with the phone number as parameter
-        router.push(`/reset-password?phone=${encodeURIComponent(data.phone)}`);
+        router.push('/login');
       },
     });
   };
@@ -47,57 +49,80 @@ export function ForgotPasswordForm() {
           পাসওয়ার্ড রিসেট করুন
         </h1>
         <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
-          আপনার অ্যাকাউন্টের রেজিস্টার্ড মোবাইল নম্বরটি নিচে দিন। আমরা পাসওয়ার্ড পরিবর্তন করার জন্য একটি ৬ ডিজিটের ওটিপি (OTP) পাঠাবো।
+          আপনার রেজিস্টার্ড ইমেইল ও শপ আইডি দিন। রিসেট লিংক ইমেইলে পাঠানো হবে।
         </p>
       </div>
 
+      {isSuccess && (
+        <div className="mb-4 rounded-lg bg-green-50 border-l-4 border-green-500 p-3 text-xs font-semibold text-green-800">
+          রিসেট লিংক পাঠানো হয়েছে। ইমেইল চেক করুন।
+        </div>
+      )}
+
       {error && (
         <div className="mb-4 rounded-lg bg-red-50 border-l-4 border-destructive p-3 text-xs font-semibold text-destructive">
-          {error.message || 'মোবাইল নম্বরটি সঠিক নয় অথবা রেজিস্টার্ড নেই।'}
+          {error.message || 'ইমেইল বা শপ আইডি সঠিক নয়।'}
         </div>
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* Mobile Number Field */}
         <div>
-          <label htmlFor="phone" className="block text-sm font-semibold text-slate-700 mb-1.5">
-            মোবাইল নম্বর <span className="text-destructive">*</span>
+          <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-1.5">
+            ইমেইল <span className="text-destructive">*</span>
           </label>
           <div className="relative">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <Phone className="h-4 w-4 text-slate-400" />
+              <Mail className="h-4 w-4 text-slate-400" />
             </div>
             <input
-              id="phone"
-              type="tel"
-              inputMode="tel"
-              placeholder="017xxxxxxxx"
-              {...register('phone')}
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              {...register('email')}
               className={`h-11 w-full rounded-lg border pl-9 pr-3 text-sm outline-none transition-all ${
-                errors.phone
+                errors.email
                   ? 'border-destructive focus:ring-1 focus:ring-destructive'
                   : 'border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary'
               }`}
             />
           </div>
-          {errors.phone && (
-            <p className="text-xs text-destructive mt-1 font-semibold">{errors.phone.message}</p>
+          {errors.email && (
+            <p className="text-xs text-destructive mt-1 font-semibold">{errors.email.message}</p>
           )}
         </div>
 
-        {/* Submit */}
+        <div>
+          <label htmlFor="shopId" className="block text-sm font-semibold text-slate-700 mb-1.5">
+            শপ আইডি <span className="text-destructive">*</span>
+          </label>
+          <input
+            id="shopId"
+            type="text"
+            placeholder="00000000-0000-0000-0000-000000000000"
+            {...register('shopId')}
+            className={`h-10 w-full rounded-lg border px-3 text-xs font-mono outline-none transition-all ${
+              errors.shopId
+                ? 'border-destructive focus:ring-1 focus:ring-destructive'
+                : 'border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary'
+            }`}
+          />
+          {errors.shopId && (
+            <p className="text-xs text-destructive mt-1 font-semibold">{errors.shopId.message}</p>
+          )}
+        </div>
+
         <button
           type="submit"
           disabled={isPending}
-          className="w-full h-11 bg-primary text-white rounded-lg font-bold text-sm hover:bg-primary/95 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:bg-primary/50 disabled:scale-100"
+          className="w-full h-11 bg-primary text-white rounded-lg font-bold text-sm hover:bg-primary/95 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:bg-primary/50"
         >
           {isPending ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>কোড পাঠানো হচ্ছে...</span>
+              <span>পাঠানো হচ্ছে...</span>
             </>
           ) : (
-            <span>ওটিপি (OTP) পাঠান</span>
+            <span>রিসেট লিংক পাঠান</span>
           )}
         </button>
       </form>
