@@ -15,7 +15,8 @@ import {
   ChevronRight, 
   Store,
   MapPin,
-  ChevronsUpDown
+  ChevronsUpDown,
+  Smartphone
 } from 'lucide-react';
 import { useUiStore } from '@/stores/use-ui';
 import { useTenantStore } from '@/stores/use-tenant';
@@ -56,6 +57,12 @@ const NAVIGATION_ITEMS: NavItem[] = [
     href: '/dashboard/ledger',
     icon: BookOpen,
     permission: 'ledger:read',
+  },
+  {
+    name: 'Mobile Services',
+    banglaName: 'মোবাইল সার্ভিস',
+    href: '/dashboard/mobile-services',
+    icon: Smartphone,
   },
   {
     name: 'Customers',
