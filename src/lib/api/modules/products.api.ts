@@ -85,6 +85,40 @@ export interface ProductQueryParams extends PaginationParams {
   brand?: string;
   barcode?: string;
   isActive?: boolean;
+  lowStock?: boolean;
+}
+
+// ─── Stock Movement Types ─────────────────────────────────────────────────────
+
+export type StockMovementType = 'IN' | 'OUT' | 'ADJUSTMENT' | 'RETURN' | 'DAMAGE';
+
+export interface StockMovement {
+  id: string;
+  shopId: string;
+  productId: string;
+  type: StockMovementType;
+  quantity: number;
+  unitCostCents?: number | null;
+  referenceType?: string | null;
+  referenceId?: string | null;
+  notes?: string | null;
+  createdBy?: string | null;
+  createdAt: string;
+  creator?: { id: string; name: string } | null;
+}
+
+export interface StockAdjustmentRequest {
+  type: StockMovementType;
+  quantity: number;
+  notes?: string | null;
+}
+
+export interface StockMovementQueryParams extends PaginationParams {}
+
+export interface StockAdjustmentResult {
+  product: Product;
+  movement: StockMovement;
+  balanceAfter: number;
 }
 
 // ─── Category API Functions ───────────────────────────────────────────────────
@@ -202,4 +236,34 @@ export async function updateProduct(productId: string, data: UpdateProductReques
  */
 export async function deleteProduct(productId: string): Promise<void> {
   await apiClient.delete(`/products/${productId}`);
+}
+
+/**
+ * List stock movements (inventory ledger) for a product
+ */
+export async function listStockMovements(
+  productId: string,
+  params?: StockMovementQueryParams,
+): Promise<PaginatedResponse<StockMovement>> {
+  const res = await apiClient.get<PaginatedResponse<StockMovement>>(
+    `/products/${productId}/stock-movements`,
+    {
+      params: buildParams(params as Record<string, string | number | boolean | Date | undefined | null>),
+    },
+  );
+  return res.data;
+}
+
+/**
+ * Record a manual stock adjustment (stock in, out, damage, or correction)
+ */
+export async function adjustStock(
+  productId: string,
+  data: StockAdjustmentRequest,
+): Promise<StockAdjustmentResult> {
+  const res = await apiClient.post<StockAdjustmentResult>(
+    `/products/${productId}/stock-adjustments`,
+    data,
+  );
+  return res.data;
 }

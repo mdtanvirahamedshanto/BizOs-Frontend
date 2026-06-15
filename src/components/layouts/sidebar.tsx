@@ -14,6 +14,7 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Store,
+  Truck,
   MapPin,
   ChevronsUpDown,
   Smartphone,
@@ -51,6 +52,13 @@ const NAVIGATION_ITEMS: NavItem[] = [
     href: '/dashboard/inventory',
     icon: Warehouse,
     permission: 'inventory:read',
+  },
+  {
+    name: 'Purchases',
+    banglaName: 'ক্রয় ব্যবস্থাপনা',
+    href: '/dashboard/purchases',
+    icon: Truck,
+    permission: 'purchases:read',
   },
   {
     name: 'Ledger',

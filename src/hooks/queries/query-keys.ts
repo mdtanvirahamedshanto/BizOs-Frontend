@@ -8,6 +8,7 @@ import type {
   SupplierQueryParams,
   ProductQueryParams,
   CategoryQueryParams,
+  StockMovementQueryParams,
   SaleQueryParams,
   PurchaseQueryParams,
   PaymentQueryParams,
@@ -62,6 +63,8 @@ export const queryKeys = {
     detail: (id: string) => [...queryKeys.products.details(), id] as const,
     brands: () => [...queryKeys.products.all, 'brands'] as const,
     units: () => [...queryKeys.products.all, 'units'] as const,
+    stockMovements: (productId: string, params?: StockMovementQueryParams) =>
+      [...queryKeys.products.all, 'stock-movements', productId, params ?? {}] as const,
     categories: {
       all: ['categories'] as const,
       tree: () => [...queryKeys.products.categories.all, 'tree'] as const,

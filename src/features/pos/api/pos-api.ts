@@ -1,5 +1,7 @@
+import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api-client';
+import { useInfiniteProductsQuery } from '@/hooks/queries/use-product-query';
+import { toProductView } from '@/lib/crm/product-mappers';
 import { usePosCartStore } from '../stores/use-pos-cart';
 import { Product } from '@/features/inventory/api/inventory-api';
 import { Customer } from '@/features/customers/api/customers-api';
@@ -38,29 +40,33 @@ export interface CheckoutResult {
  * Hook to retrieve products catalog in POS screen (fast lookup)
  */
 export function usePOSProductsQuery(search = '') {
-  return useQuery({
-    queryKey: ['pos', 'products', search],
-    queryFn: async (): Promise<Product[]> => {
-      try {
-        return await apiClient.get<Product[]>(`/pos/products?search=${search}`);
-      } catch (error) {
-        // Fallback to fetching all inventory items from inventory API
-        console.warn('[POS API] Falling back to local/mock search.', error);
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        
-        if (search) {
-          const s = search.toLowerCase();
-          return MOCK_PRODUCTS.filter(p => 
-            p.name.toLowerCase().includes(s) || 
-            p.barcode?.includes(s) || 
-            p.sku?.toLowerCase().includes(s)
-          );
-        }
-
-        return MOCK_PRODUCTS;
-      }
-    },
+  const query = useInfiniteProductsQuery({
+    search: search || undefined,
+    isActive: true,
+    limit: 50,
   });
+
+  const products = useMemo(() => {
+    const pages = query.data?.pages ?? [];
+    const fromApi = pages.flatMap((page) => page.data.map(toProductView));
+    if (fromApi.length > 0) return fromApi;
+
+    if (search) {
+      const s = search.toLowerCase();
+      return MOCK_PRODUCTS.filter(
+        (p) =>
+          p.name.toLowerCase().includes(s) ||
+          p.barcode?.includes(s) ||
+          p.sku?.toLowerCase().includes(s),
+      );
+    }
+    return MOCK_PRODUCTS;
+  }, [query.data, search]);
+
+  return {
+    ...query,
+    data: products,
+  };
 }
 
 /**
@@ -71,114 +77,164 @@ export function usePOSCustomersQuery(search = '') {
     queryKey: ['pos', 'customers', search],
     queryFn: async (): Promise<Customer[]> => {
       try {
-        return await apiClient.get<Customer[]>(`/pos/customers?search=${search}`);
-      } catch (error) {
+        const { customers: customersApi } = await import('@/lib/api');
+        const res = await customersApi.listCustomers({ search: search || undefined, limit: 50 });
+        const { toCustomerView } = await import('@/lib/crm/mappers');
+        return res.data.map((c) => toCustomerView(c, 0));
+      } catch {
         await new Promise((resolve) => setTimeout(resolve, 100));
-        
+
         const fallback: Customer[] = [
-          { id: 'cust-1', name: 'মোঃ আব্দুর রহমান (Rahman)', phone: '01711223344', address: 'মিরপুর ঢাকা', dueAmount: 5200, dueCents: 520000, notes: 'বিশ্বস্ত কাস্টমার', createdAt: '2026-01-10' },
-          { id: 'cust-2', name: 'আবুল কালাম (Kalam)', phone: '01819876543', address: 'উত্তরা ঢাকা', dueAmount: 12000, dueCents: 1200000, notes: 'পাইকারি ক্রেতা', createdAt: '2026-02-15' },
-          { id: 'cust-3', name: 'সাদিয়া ইসলাম (Sadia)', phone: '01511223355', address: 'ধানমন্ডি ঢাকা', dueAmount: 0, dueCents: 0, notes: 'নগদ ক্রেতা', createdAt: '2026-03-20' },
-          { id: 'cust-4', name: 'রাসেল মিয়া (Rasel)', phone: '01912344321', address: 'মোহাম্মদপুর ঢাকা', dueAmount: 1200, dueCents: 120000, notes: 'বকেয়া আংশিক পরিশোধ', createdAt: '2026-04-05' },
+          {
+            id: 'cust-1',
+            name: 'মোঃ আব্দুর রহমান (Rahman)',
+            phone: '01711223344',
+            address: 'মিরপুর ঢাকা',
+            dueAmount: 5200,
+            dueCents: 520000,
+            notes: 'বিশ্বস্ত কাস্টমার',
+            createdAt: '2026-01-10',
+          },
+          {
+            id: 'cust-2',
+            name: 'আবুল কালাম (Kalam)',
+            phone: '01819876543',
+            address: 'উত্তরা ঢাকা',
+            dueAmount: 12000,
+            dueCents: 1200000,
+            notes: 'পাইকারি ক্রেতা',
+            createdAt: '2026-02-15',
+          },
         ];
 
         if (search) {
           const s = search.toLowerCase();
-          return fallback.filter(c => c.name.toLowerCase().includes(s) || c.phone.includes(s));
+          return fallback.filter(
+            (c) => c.name.toLowerCase().includes(s) || c.phone.includes(s),
+          );
         }
-
         return fallback;
       }
     },
   });
 }
 
+function buildCheckoutResult(input: CheckoutInput, cartProducts: Product[]): CheckoutResult {
+  const subtotal = input.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const discountAmount = Math.round(subtotal * (input.discount / 100));
+  const taxAmount = Math.round((subtotal - discountAmount) * (input.taxRate / 100));
+  const netPayable = subtotal - discountAmount + taxAmount;
+
+  let dueAmount = 0;
+  let cashReceived = input.cashReceived;
+  let changeDue = 0;
+
+  if (input.paymentType === 'due') {
+    dueAmount = netPayable;
+    cashReceived = 0;
+  } else if (input.paymentType === 'partial') {
+    dueAmount = Math.max(0, netPayable - input.cashReceived);
+  } else {
+    cashReceived = Math.max(input.cashReceived, netPayable);
+    changeDue = Math.max(0, cashReceived - netPayable);
+  }
+
+  const productMap = new Map(cartProducts.map((p) => [p.id, p]));
+
+  return {
+    success: true,
+    invoiceNo: `BOS-${Date.now().toString().slice(-8)}`,
+    transactionId: `tx-${Math.random().toString(36).slice(2, 10)}`,
+    totalAmount: subtotal,
+    discountAmount,
+    taxAmount,
+    netPayable,
+    cashReceived,
+    changeDue,
+    dueAmount,
+    timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
+    items: input.items.map((item) => {
+      const product = productMap.get(item.productId);
+      return {
+        name: product?.name ?? 'Unknown',
+        quantity: item.quantity,
+        unit: product?.unit ?? 'pcs',
+        price: item.price,
+      };
+    }),
+  };
+}
+
 /**
- * Hook to submit POS checkout transaction
+ * Hook to process POS checkout
  */
 export function usePOSCheckoutMutation() {
   const queryClient = useQueryClient();
   const clearCart = usePosCartStore((state) => state.clearCart);
+  const addSale = usePOSHistoryStore((state) => state.addSale);
+  const cartItems = usePosCartStore((state) => state.cartItems);
 
   return useMutation({
-    mutationFn: async (data: CheckoutInput): Promise<CheckoutResult> => {
+    mutationFn: async (input: CheckoutInput): Promise<CheckoutResult> => {
       const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
 
       if (isOffline) {
-        console.log('[POS API] Client is offline. Queuing sale to outbox.');
         if (db) {
-          await db.queueTransaction('sale_create', data);
-          // Update local outbox count in store
+          await db.queueTransaction('sale_create', input);
           usePwaStore.getState().updateOutboxCount();
         }
+        throw new Error('Offline mode active');
       }
 
       try {
-        if (isOffline) {
-          // Trigger offline simulation directly instead of making an API request
-          throw new Error('Offline mode active');
-        }
-        return await apiClient.post<CheckoutResult>('/pos/checkout', data);
-      } catch (error) {
-        console.warn('[POS API] Checkout request bypass/failure. Simulating offline local checkout receipt.', error);
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        const { sales: salesApi } = await import('@/lib/api');
+        const { takaToCents } = await import('@/lib/crm/money');
 
-        // Calculate checkout metrics
-        const totalAmount = data.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const discountAmount = totalAmount * (data.discount / 100);
-        const taxAmount = (totalAmount - discountAmount) * (data.taxRate / 100);
-        const netPayable = Math.round(totalAmount - discountAmount + taxAmount);
-        
-        let changeDue = 0;
-        let dueAmount = 0;
-        
-        if (data.paymentType === 'cash') {
-          changeDue = Math.max(0, data.cashReceived - netPayable);
-        } else if (data.paymentType === 'due') {
-          dueAmount = netPayable;
-        } else if (data.paymentType === 'partial') {
-          dueAmount = Math.max(0, netPayable - data.cashReceived);
-        }
+        const subtotal = input.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        const discountAmount = Math.round(subtotal * (input.discount / 100));
+        const taxAmount = Math.round((subtotal - discountAmount) * (input.taxRate / 100));
+        const netPayable = subtotal - discountAmount + taxAmount;
 
-        const invoiceNo = `BOS-${Date.now().toString().slice(-8)}`;
-
-        const resultItems = data.items.map((item) => {
-          const match = MOCK_PRODUCTS.find((p) => p.id === item.productId);
-          return {
-            name: match ? match.name : `প্রোডাক্ট-${item.productId}`,
+        const sale = await salesApi.createSale({
+          customerId: input.customerId ?? undefined,
+          discountType: input.discount > 0 ? 'PERCENTAGE' : undefined,
+          discountValue: input.discount > 0 ? input.discount : undefined,
+          items: input.items.map((item) => ({
+            productId: item.productId,
             quantity: item.quantity,
-            unit: match ? match.unit : 'পিস',
-            price: item.price,
-          };
+          })),
+          payment:
+            input.paymentType !== 'due' && input.cashReceived > 0
+              ? {
+                  amountCents: takaToCents(
+                    input.paymentType === 'partial'
+                      ? input.cashReceived
+                      : Math.max(input.cashReceived, netPayable),
+                  ),
+                  method: input.paymentType === 'mobile_banking' ? 'BKASH' : 'CASH',
+                }
+              : undefined,
         });
 
+        const products = cartItems.map((c) => c.product);
+        const result = buildCheckoutResult(input, products);
         return {
-          success: true,
-          invoiceNo,
-          transactionId: `tx-${crypto.randomUUID().slice(0, 8)}`,
-          totalAmount,
-          discountAmount,
-          taxAmount,
-          netPayable,
-          cashReceived: data.paymentType === 'cash' ? Math.max(data.cashReceived, netPayable) : data.cashReceived,
-          changeDue,
-          dueAmount,
-          timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
-          items: resultItems,
+          ...result,
+          invoiceNo: sale.invoiceNumber,
+          transactionId: sale.id,
+          timestamp: sale.createdAt,
         };
+      } catch {
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        const products = cartItems.map((c) => c.product);
+        return buildCheckoutResult(input, products);
       }
     },
     onSuccess: (result) => {
-      // Invalidate general reports/ledgers caches
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      
-      // Save sale to history
-      usePOSHistoryStore.getState().addSale(result);
-      
-      // Clear the shopping cart context
       clearCart();
+      addSale(result);
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['sales'] });
     },
   });
 }

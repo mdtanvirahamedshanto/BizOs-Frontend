@@ -15,6 +15,8 @@ export interface PurchaseItem {
   quantity: number;
   unitCostCents: number;
   lineTotalCents: number;
+  /** Backend field alias */
+  totalCents?: number;
 }
 
 export interface Purchase {
@@ -22,6 +24,7 @@ export interface Purchase {
   shopId: string;
   supplierId?: string;
   supplierName?: string;
+  referenceNumber: string;
   purchaseDate: string;
   expectedDate?: string;
   receivedDate?: string;
@@ -89,6 +92,20 @@ export interface PurchaseQueryParams extends PaginationParams {
   paymentStatus?: PaymentStatus;
 }
 
+function normalizePurchaseItem(raw: PurchaseItem): PurchaseItem {
+  return {
+    ...raw,
+    lineTotalCents: raw.lineTotalCents ?? raw.totalCents ?? raw.quantity * raw.unitCostCents,
+  };
+}
+
+function normalizePurchase(raw: Purchase & { items?: PurchaseItem[] }): Purchase {
+  return {
+    ...raw,
+    items: (raw.items ?? []).map(normalizePurchaseItem),
+  };
+}
+
 // ─── API Functions ────────────────────────────────────────────────────────────
 
 /**
@@ -96,7 +113,7 @@ export interface PurchaseQueryParams extends PaginationParams {
  */
 export async function createPurchase(data: CreatePurchaseRequest): Promise<Purchase> {
   const res = await apiClient.post<Purchase>('/purchases', data);
-  return res.data;
+  return normalizePurchase(res.data);
 }
 
 /**
@@ -108,7 +125,10 @@ export async function listPurchases(
   const res = await apiClient.get<PaginatedResponse<Purchase>>('/purchases', {
     params: buildParams(params as Record<string, string | number | boolean | Date | undefined | null>),
   });
-  return res.data;
+  return {
+    ...res.data,
+    data: res.data.data.map(normalizePurchase),
+  };
 }
 
 /**
@@ -116,7 +136,7 @@ export async function listPurchases(
  */
 export async function getPurchase(purchaseId: string): Promise<Purchase> {
   const res = await apiClient.get<Purchase>(`/purchases/${purchaseId}`);
-  return res.data;
+  return normalizePurchase(res.data);
 }
 
 /**
@@ -127,7 +147,7 @@ export async function updatePurchaseStatus(
   data: UpdatePurchaseStatusRequest,
 ): Promise<Purchase> {
   const res = await apiClient.put<Purchase>(`/purchases/${purchaseId}/status`, data);
-  return res.data;
+  return normalizePurchase(res.data);
 }
 
 /**
@@ -138,5 +158,5 @@ export async function returnPurchase(
   data: ReturnPurchaseRequest,
 ): Promise<Purchase> {
   const res = await apiClient.post<Purchase>(`/purchases/${purchaseId}/return`, data);
-  return res.data;
+  return normalizePurchase(res.data);
 }

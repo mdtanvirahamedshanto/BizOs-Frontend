@@ -72,6 +72,12 @@ export {
   useDeleteProductMutation,
 } from './use-product-query';
 
+// Inventory / stock movements
+export {
+  useStockMovementsQuery,
+  useAdjustStockMutation,
+} from './use-inventory-query';
+
 // Sales
 export {
   useSalesQuery,

@@ -11,6 +11,8 @@ export type Permission =
   | 'pos:void'
   | 'inventory:read'
   | 'inventory:write'
+  | 'purchases:read'
+  | 'purchases:write'
   | 'ledger:read'
   | 'ledger:write'
   | 'reports:read'
@@ -22,6 +24,8 @@ const UI_PERMISSION_REQUIREMENTS: Record<Permission, string[]> = {
   'pos:void': ['sales.delete', 'sales.update', 'sales.return'],
   'inventory:read': ['products.read'],
   'inventory:write': ['products.create', 'products.update'],
+  'purchases:read': ['purchases.read'],
+  'purchases:write': ['purchases.create', 'purchases.update'],
   'ledger:read': ['khata.read'],
   'ledger:write': ['khata.write', 'khata.update'],
   'reports:read': ['reports.read'],

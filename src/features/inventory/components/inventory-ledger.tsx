@@ -44,9 +44,10 @@ export function InventoryLedger({ productId }: InventoryLedgerProps) {
 
       <div className="max-h-60 overflow-y-auto space-y-2.5 pr-1">
         {ledger.map((item) => {
-          const isAdd = item.type === 'stock_in';
+          const isAdd = item.type === 'stock_in' || item.type === 'purchase';
           const isSale = item.type === 'sale';
           const isDamage = item.type === 'damage';
+          const isReturn = item.type === 'return';
           
           return (
             <div 
@@ -70,7 +71,7 @@ export function InventoryLedger({ productId }: InventoryLedgerProps) {
                       ? 'bg-amber-100 text-amber-800'
                       : 'bg-slate-100 text-slate-700'
                   }`}>
-                    {isAdd ? 'স্টক ইন' : isSale ? 'বিক্রি (POS)' : isDamage ? 'নষ্ট/ক্ষতিগ্রস্ত' : 'সমন্বয়'}
+                    {isAdd ? 'স্টক ইন' : isSale ? 'বিক্রি (POS)' : isReturn ? 'ফেরত' : isDamage ? 'নষ্ট/ক্ষতিগ্রস্ত' : 'সমন্বয়'}
                   </span>
                   
                   <span className="text-[10px] text-slate-400 font-bold leading-none flex items-center gap-0.5">
@@ -95,7 +96,7 @@ export function InventoryLedger({ productId }: InventoryLedgerProps) {
                   {item.quantityDelta > 0 ? '+' : ''}{item.quantityDelta}
                 </p>
                 <span className="text-[9px] text-slate-400 font-bold">
-                  অবশিষ্ট স্টক: {item.balanceAfter}
+                  {item.balanceAfter != null ? `অবশিষ্ট স্টক: ${item.balanceAfter}` : ''}
                 </span>
               </div>
             </div>

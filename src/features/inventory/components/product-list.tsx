@@ -1,10 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useProductsQuery, useCategoriesQuery, Product } from '../api/inventory-api';
+import React, { useState, useEffect } from 'react';
+import {
+  useProductsQuery,
+  useCategoriesQuery,
+  useProductBrandsQuery,
+  Product,
+} from '../api/inventory-api';
 import { formatTaka } from '@/features/dashboard/components/kpi-cards';
 import { ProductForm } from './product-form';
 import { AdjustmentForm } from './adjustment-form';
+import { useCursorPagination } from '@/lib/crm/pagination';
+import { CursorPagination } from '@/components/ui/cursor-pagination';
 import { 
   Search, 
   Plus, 
@@ -25,15 +32,36 @@ interface ProductListProps {
 
 export function ProductList({ onSelectProduct, selectedProductId }: ProductListProps) {
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const [brand, setBrand] = useState('');
   const [lowStockOnly, setLowStockOnly] = useState(false);
+  const { cursor, reset, next, prev, hasPrev } = useCursorPagination();
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [adjustingProduct, setAdjustingProduct] = useState<Product | null>(null);
 
-  const { data: products, isLoading, refetch } = useProductsQuery(search, categoryId, lowStockOnly);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    reset();
+  }, [debouncedSearch, categoryId, brand, lowStockOnly, reset]);
+
+  const { data: products, meta, isLoading, refetch } = useProductsQuery(
+    debouncedSearch,
+    categoryId,
+    lowStockOnly,
+    brand,
+    '',
+    cursor,
+    20,
+  );
   const { data: categories } = useCategoriesQuery();
+  const { data: brands } = useProductBrandsQuery();
 
   return (
     <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs w-full space-y-4">
@@ -120,6 +148,20 @@ export function ProductList({ onSelectProduct, selectedProductId }: ProductListP
           />
         </div>
 
+        {/* Brand filter */}
+        <div className="relative w-full md:w-44">
+          <select
+            value={brand}
+            onChange={(e) => setBrand(e.target.value)}
+            className="h-10 w-full rounded-lg border px-3 text-xs bg-white border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+          >
+            <option value="">সব ব্র্যান্ড</option>
+            {brands?.map((b) => (
+              <option key={b} value={b}>{b}</option>
+            ))}
+          </select>
+        </div>
+
         {/* Categories select dropdown */}
         <div className="relative w-full md:w-56">
           <select
@@ -175,7 +217,7 @@ export function ProductList({ onSelectProduct, selectedProductId }: ProductListP
             <tbody className="divide-y divide-slate-50 font-medium text-slate-700">
               {products.map((p) => {
                 const isSelected = p.id === selectedProductId;
-                const isLowStock = p.stockCount <= 5;
+                const isLowStock = p.stockCount <= p.lowStockThreshold;
                 
                 return (
                   <tr 
@@ -253,10 +295,14 @@ export function ProductList({ onSelectProduct, selectedProductId }: ProductListP
       )}
 
       {/* Pagination footer */}
-      <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-[10px] text-slate-400 font-semibold">
-        <span>মোট প্রোডাক্ট: {products?.length || 0} টি</span>
-        <span>১ম পেইজ (Pagination Auto)</span>
-      </div>
+      <CursorPagination
+        meta={meta}
+        hasPrev={hasPrev}
+        onPrev={prev}
+        onNext={() => next(meta?.nextCursor)}
+        currentCount={products?.length ?? 0}
+        itemLabel="প্রোডাক্ট"
+      />
     </div>
   );
 }

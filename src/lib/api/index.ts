@@ -101,6 +101,10 @@ export type {
   CreateCategoryRequest,
   UpdateCategoryRequest,
   CategoryQueryParams,
+  StockMovement,
+  StockAdjustmentRequest,
+  StockAdjustmentResult,
+  StockMovementQueryParams,
 } from './modules/products.api';
 
 // Sales

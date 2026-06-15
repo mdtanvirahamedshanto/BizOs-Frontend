@@ -1,303 +1,149 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api-client';
-import { ProductInput, AdjustmentInput } from '../types';
-import { db } from '@/lib/db';
-import { usePwaStore } from '@/features/pwa/stores/use-pwa-store';
-import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_LEDGERS } from './inventory-mocks';
-
-export interface Product {
-  id: string;
-  name: string;
-  sku?: string;
-  barcode?: string;
-  price: number;
-  costPrice: number;
-  stockCount: number;
-  unit: string;
-  categoryId?: string;
-  brand?: string;
-  createdAt: string;
-}
-
-export interface Category {
-  id: string;
-  name: string;
-}
-
-export interface InventoryLedgerItem {
-  id: string;
-  timestamp: string;
-  type: 'stock_in' | 'stock_out' | 'damage' | 'adjust' | 'sale';
-  quantityDelta: number;
-  balanceAfter: number;
-  reason: string;
-  operator: string;
-}
-
 /**
- * Hook to retrieve products list
+ * Inventory feature hooks — adapters over TanStack Query + Products SDK.
  */
-export function useProductsQuery(search = '', categoryId = '', lowStockOnly = false) {
-  return useQuery({
-    queryKey: ['products', 'list', search, categoryId, lowStockOnly],
-    queryFn: async (): Promise<Product[]> => {
-      try {
-        return await apiClient.get<Product[]>(`/products?search=${search}&category=${categoryId}&lowStock=${lowStockOnly}`);
-      } catch (error) {
-        console.warn('[Products API] Using mockup fallbacks.', error);
-        await new Promise((resolve) => setTimeout(resolve, 300));
 
-        let list = [...MOCK_PRODUCTS];
+import { useMemo, useState, useEffect } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import {
+  useProductsQuery as useProductsQueryBase,
+  useProductQuery as useProductQueryBase,
+  useCategoriesQuery as useCategoriesQueryBase,
+  useProductBrandsQuery,
+  useProductUnitsQuery,
+  useCreateProductMutation as useCreateProductMutationBase,
+  useUpdateProductMutation as useUpdateProductMutationBase,
+  useDeleteProductMutation as useDeleteProductMutationBase,
+} from '@/hooks/queries/use-product-query';
+import {
+  useStockMovementsQuery,
+  useAdjustStockMutation as useAdjustStockMutationBase,
+} from '@/hooks/queries/use-inventory-query';
+import {
+  toProductView,
+  toCategoryView,
+  productInputToCreateRequest,
+  productInputToUpdateRequest,
+  adjustmentInputToRequest,
+  computeRunningBalances,
+} from '@/lib/crm/product-mappers';
+import type {
+  ProductView,
+  CategoryView,
+  InventoryLedgerItemView,
+} from '@/lib/crm/product-mappers';
+import type { ProductInput, AdjustmentInput } from '../types';
 
-        if (search) {
-          const s = search.toLowerCase();
-          list = list.filter((p) => 
-            p.name.toLowerCase().includes(s) || 
-            p.barcode?.includes(s) || 
-            p.sku?.toLowerCase().includes(s)
-          );
-        }
+export type Product = ProductView;
+export type Category = CategoryView;
+export type InventoryLedgerItem = InventoryLedgerItemView;
 
-        if (categoryId) {
-          list = list.filter((p) => p.categoryId === categoryId);
-        }
+function useDebouncedValue<T>(value: T, delayMs = 300): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(timer);
+  }, [value, delayMs]);
+  return debounced;
+}
 
-        if (lowStockOnly) {
-          list = list.filter((p) => p.stockCount <= 5); // threshold of 5 is alert level
-        }
+export function useProductsQuery(
+  search = '',
+  categoryId = '',
+  lowStockOnly = false,
+  brand = '',
+  barcode = '',
+  cursor?: string,
+  limit = 20,
+) {
+  const debouncedSearch = useDebouncedValue(search.trim());
 
-        return list;
-      }
-    },
+  const query = useProductsQueryBase({
+    search: debouncedSearch || undefined,
+    categoryId: categoryId || undefined,
+    brand: brand || undefined,
+    barcode: barcode || undefined,
+    lowStock: lowStockOnly || undefined,
+    cursor,
+    limit,
   });
+
+  const products = useMemo(
+    () => (query.data?.data ?? []).map(toProductView),
+    [query.data],
+  );
+
+  return {
+    ...query,
+    data: products,
+    meta: query.data?.meta,
+  };
 }
 
-/**
- * Hook to retrieve specific product details
- */
 export function useProductDetailsQuery(productId: string | null) {
-  return useQuery({
-    queryKey: ['products', 'details', productId],
-    enabled: !!productId,
-    queryFn: async (): Promise<Product> => {
-      try {
-        return await apiClient.get<Product>(`/products/${productId}`);
-      } catch (error) {
-        await new Promise((resolve) => setTimeout(resolve, 200));
-        const found = MOCK_PRODUCTS.find((p) => p.id === productId);
-        if (!found) throw new Error('Product not found');
-        return found;
-      }
-    },
-  });
+  const query = useProductQueryBase(productId ?? '');
+  return {
+    ...query,
+    data: query.data ? toProductView(query.data) : undefined,
+  };
 }
 
-/**
- * Hook to retrieve categories list
- */
 export function useCategoriesQuery() {
-  return useQuery({
-    queryKey: ['categories', 'list'],
-    queryFn: async (): Promise<Category[]> => {
-      try {
-        return await apiClient.get<Category[]>('/categories');
-      } catch (error) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        return MOCK_CATEGORIES;
-      }
-    },
-  });
+  const query = useCategoriesQueryBase({ limit: 100 });
+  const categories = useMemo(
+    () => (query.data?.data ?? []).map(toCategoryView),
+    [query.data],
+  );
+  return { ...query, data: categories };
 }
 
-/**
- * Hook to retrieve inventory audit log
- */
+export { useProductBrandsQuery, useProductUnitsQuery };
+
 export function useInventoryLedgerQuery(productId: string | null) {
-  return useQuery({
-    queryKey: ['products', 'ledger', productId],
-    enabled: !!productId,
-    queryFn: async (): Promise<InventoryLedgerItem[]> => {
-      try {
-        return await apiClient.get<InventoryLedgerItem[]>(`/products/${productId}/ledger`);
-      } catch (error) {
-        await new Promise((resolve) => setTimeout(resolve, 200));
-        return MOCK_LEDGERS[productId || ''] || [
-          {
-            id: 'lg-fallback',
-            timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
-            type: 'stock_in',
-            quantityDelta: MOCK_PRODUCTS.find(p => p.id === productId)?.stockCount || 0,
-            balanceAfter: MOCK_PRODUCTS.find(p => p.id === productId)?.stockCount || 0,
-            reason: 'প্রারম্ভিক স্টক এন্ট্রি (Initial Setup)',
-            operator: 'মোঃ আব্দুল করিম',
-          }
-        ];
-      }
-    },
-  });
+  const productQuery = useProductQueryBase(productId ?? '');
+  const movementsQuery = useStockMovementsQuery(productId ?? '', { limit: 50 });
+
+  const ledger = useMemo(() => {
+    const movements = movementsQuery.data?.data ?? [];
+    const currentStock = productQuery.data?.stockQuantity ?? 0;
+    if (!movements.length) return [];
+    return computeRunningBalances(movements, currentStock);
+  }, [movementsQuery.data, productQuery.data]);
+
+  return {
+    ...movementsQuery,
+    isLoading: movementsQuery.isLoading || productQuery.isLoading,
+    data: ledger,
+  };
 }
 
-/**
- * Hook to create product
- */
 export function useCreateProductMutation() {
-  const queryClient = useQueryClient();
+  const base = useCreateProductMutationBase();
 
   return useMutation({
-    mutationFn: async (data: ProductInput) => {
-      try {
-        return await apiClient.post<Product>('/products', data);
-      } catch (error) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        const newProduct: Product = {
-          id: `p-${Date.now()}`,
-          name: data.name,
-          sku: data.sku,
-          barcode: data.barcode,
-          price: data.price,
-          costPrice: data.costPrice,
-          stockCount: data.stockCount,
-          unit: data.unit,
-          categoryId: data.categoryId,
-          brand: data.brand,
-          createdAt: new Date().toISOString().split('T')[0],
-        };
-        MOCK_PRODUCTS.unshift(newProduct);
-        return newProduct;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-    },
+    mutationFn: (input: ProductInput) =>
+      base.mutateAsync(productInputToCreateRequest(input)),
   });
 }
 
-/**
- * Hook to update product details
- */
 export function useUpdateProductMutation() {
-  const queryClient = useQueryClient();
+  const base = useUpdateProductMutationBase();
 
   return useMutation({
-    mutationFn: async (data: { id: string; input: ProductInput }) => {
-      try {
-        return await apiClient.put<Product>(`/products/${data.id}`, data.input);
-      } catch (error) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        const updatedProducts = MOCK_PRODUCTS.map((p) => {
-          if (p.id === data.id) {
-            return {
-              ...p,
-              name: data.input.name,
-              sku: data.input.sku,
-              barcode: data.input.barcode,
-              price: data.input.price,
-              costPrice: data.input.costPrice,
-              unit: data.input.unit,
-              categoryId: data.input.categoryId,
-              brand: data.input.brand,
-            };
-          }
-          return p;
-        });
-        MOCK_PRODUCTS.length = 0;
-        MOCK_PRODUCTS.push(...updatedProducts);
-        return MOCK_PRODUCTS.find((p) => p.id === data.id)!;
-      }
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['products', 'details', variables.id] });
-    },
+    mutationFn: ({ id, input }: { id: string; input: ProductInput }) =>
+      base.mutateAsync({
+        id,
+        data: productInputToUpdateRequest(input),
+      }),
   });
 }
 
-/**
- * Hook to delete product
- */
-export function useDeleteProductMutation() {
-  const queryClient = useQueryClient();
+export { useDeleteProductMutationBase as useDeleteProductMutation };
 
-  return useMutation({
-    mutationFn: async (id: string) => {
-      try {
-        return await apiClient.delete<{ success: boolean }>(`/products/${id}`);
-      } catch (error) {
-        await new Promise((resolve) => setTimeout(resolve, 400));
-        const updatedProducts = MOCK_PRODUCTS.filter((p) => p.id !== id);
-        MOCK_PRODUCTS.length = 0;
-        MOCK_PRODUCTS.push(...updatedProducts);
-        return { success: true };
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-    },
-  });
-}
-
-/**
- * Hook to adjust product stock
- */
 export function useAdjustStockMutation() {
-  const queryClient = useQueryClient();
+  const base = useAdjustStockMutationBase();
 
   return useMutation({
-    mutationFn: async (data: { productId: string; input: AdjustmentInput }) => {
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
-
-      if (isOffline) {
-        console.log('[Inventory API] Client is offline. Queuing stock adjustment to outbox.');
-        if (db) {
-          await db.queueTransaction('stock_adjustment', data);
-          usePwaStore.getState().updateOutboxCount();
-        }
-      }
-
-      try {
-        if (isOffline) {
-          throw new Error('Offline mode active');
-        }
-        return await apiClient.post<Product>(`/products/${data.productId}/adjust`, data.input);
-      } catch (error) {
-        await new Promise((resolve) => setTimeout(resolve, 300));
-
-        const product = MOCK_PRODUCTS.find((p) => p.id === data.productId);
-        if (!product) throw new Error('Product not found');
-
-        const delta = 
-          data.input.type === 'stock_in' 
-            ? data.input.quantity 
-            : -data.input.quantity;
-
-        const previousStock = product.stockCount;
-        const nextStock = Math.max(0, previousStock + delta);
-
-        product.stockCount = nextStock;
-
-        // Log entry to history
-        const newLedger: InventoryLedgerItem = {
-          id: `lg-${Date.now()}`,
-          timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
-          type: data.input.type,
-          quantityDelta: delta,
-          balanceAfter: nextStock,
-          reason: data.input.reason,
-          operator: 'মোঃ আব্দুল করিম (মালিক)',
-        };
-
-        if (!MOCK_LEDGERS[data.productId]) {
-          MOCK_LEDGERS[data.productId] = [];
-        }
-        MOCK_LEDGERS[data.productId].unshift(newLedger);
-
-        return product;
-      }
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['products', 'details', variables.productId] });
-      queryClient.invalidateQueries({ queryKey: ['products', 'ledger', variables.productId] });
-    },
+    mutationFn: ({ productId, input }: { productId: string; input: AdjustmentInput }) =>
+      base.mutateAsync({ productId, data: adjustmentInputToRequest(input) }),
   });
 }

@@ -19,7 +19,8 @@ import { productSchema, ProductInput } from '../types';
 import { 
   useCreateProductMutation, 
   useUpdateProductMutation, 
-  useCategoriesQuery, 
+  useCategoriesQuery,
+  useProductUnitsQuery,
   Product 
 } from '../api/inventory-api';
 
@@ -29,7 +30,7 @@ interface ProductFormProps {
   onCancel: () => void;
 }
 
-const UNIT_TYPES = [
+const DEFAULT_UNITS = [
   { value: 'pcs', label: 'পিস (Pcs)' },
   { value: 'kg', label: 'কেজি (Kg)' },
   { value: 'litre', label: 'লিটার (Litre)' },
@@ -44,6 +45,17 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
   const { mutate: createProduct, isPending: isCreating } = useCreateProductMutation();
   const { mutate: updateProduct, isPending: isUpdating } = useUpdateProductMutation();
   const { data: categories } = useCategoriesQuery();
+  const { data: apiUnits } = useProductUnitsQuery();
+
+  const unitOptions = React.useMemo(() => {
+    const merged: { value: string; label: string }[] = [...DEFAULT_UNITS];
+    for (const u of apiUnits ?? []) {
+      if (!merged.some((m) => m.value === u)) {
+        merged.push({ value: u, label: u });
+      }
+    }
+    return merged;
+  }, [apiUnits]);
 
   const isPending = isCreating || isUpdating;
 
@@ -258,7 +270,7 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
               {...register('unit')}
               className="h-10 w-full rounded-lg border pl-9 pr-3 text-xs bg-white border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
             >
-              {UNIT_TYPES.map((u) => (
+              {unitOptions.map((u) => (
                 <option key={u.value} value={u.value}>
                   {u.label}
                 </option>
