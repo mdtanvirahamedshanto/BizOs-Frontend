@@ -15,7 +15,7 @@ export function CustomerKhata() {
   const [showPaymentForm, setShowPaymentForm] = useState(false);
 
   const { data: customers, isLoading: isCustomersLoading } = useCustomersQuery(search, filterTab === 'dues' ? 'dues' : 'all');
-  const { data: ledger, isLoading: isLedgerLoading } = useCustomerLedgerQuery(selectedCustomerId);
+  const { data: ledger, isLoading: isLedgerLoading } = useCustomerLedgerQuery(selectedCustomerId ?? '');
   
   const selectedCustomer = customers?.find((c) => c.id === selectedCustomerId);
 

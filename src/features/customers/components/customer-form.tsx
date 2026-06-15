@@ -38,20 +38,9 @@ export function CustomerForm({ customer, onSuccess, onCancel }: CustomerFormProp
 
   const onSubmit = (data: CustomerInput) => {
     if (isEdit && customer) {
-      updateCustomer(
-        { id: customer.id, input: data },
-        {
-          onSuccess: () => {
-            onSuccess();
-          },
-        }
-      );
+      updateCustomer({ id: customer.id, input: data }, { onSuccess: () => onSuccess() });
     } else {
-      createCustomer(data, {
-        onSuccess: () => {
-          onSuccess();
-        },
-      });
+      createCustomer(data, { onSuccess: () => onSuccess() });
     }
   };
 

@@ -1,18 +1,19 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useCustomersQuery, Customer } from '../api/customers-api';
+import React, { useState, useEffect } from 'react';
+import { useCustomersQuery } from '../api/customers-api';
 import { formatTaka } from '@/features/dashboard/components/kpi-cards';
 import { CustomerForm } from './customer-form';
-import { 
-  Search, 
-  UserPlus, 
-  Trash2, 
-  ArrowRight, 
-  Users, 
-  FolderMinus, 
+import { useCursorPagination } from '@/lib/crm/pagination';
+import { CursorPagination } from '@/components/ui/cursor-pagination';
+import {
+  Search,
+  UserPlus,
+  ArrowRight,
+  Users,
+  FolderMinus,
   Loader2,
-  Phone
+  Phone,
 } from 'lucide-react';
 
 interface CustomerListProps {
@@ -22,14 +23,29 @@ interface CustomerListProps {
 
 export function CustomerList({ onSelectCustomer, selectedCustomerId }: CustomerListProps) {
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filterTab, setFilterTab] = useState<'all' | 'dues' | 'paid'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
+  const { cursor, reset, next, prev, hasPrev } = useCursorPagination();
 
-  const { data: customers, isLoading, refetch } = useCustomersQuery(search, filterTab);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    reset();
+  }, [debouncedSearch, filterTab, reset]);
+
+  const { data: customers, meta, isLoading, refetch, isError, error } = useCustomersQuery(
+    debouncedSearch,
+    filterTab,
+    cursor,
+    20,
+  );
 
   return (
     <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs w-full space-y-4">
-      {/* Create Customer modal view */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl p-5 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
@@ -44,7 +60,6 @@ export function CustomerList({ onSelectCustomer, selectedCustomerId }: CustomerL
         </div>
       )}
 
-      {/* Title bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
         <div>
           <h2 className="text-base font-bold text-slate-800 flex items-center gap-1.5">
@@ -53,8 +68,6 @@ export function CustomerList({ onSelectCustomer, selectedCustomerId }: CustomerL
           </h2>
           <p className="text-[10px] text-slate-400 font-medium">Customer List & Dues Directory</p>
         </div>
-
-        {/* Add Customer Trigger */}
         <button
           onClick={() => setShowAddModal(true)}
           className="h-10 px-4 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/95 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 self-start sm:self-center shadow-xs"
@@ -64,9 +77,7 @@ export function CustomerList({ onSelectCustomer, selectedCustomerId }: CustomerL
         </button>
       </div>
 
-      {/* Search Bar & Filters Tab */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-        {/* Search */}
         <div className="relative flex-1 max-w-md">
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
             <Search className="h-4 w-4 text-slate-400" />
@@ -80,42 +91,33 @@ export function CustomerList({ onSelectCustomer, selectedCustomerId }: CustomerL
           />
         </div>
 
-        {/* Filters */}
         <div className="flex items-center gap-1.5 p-0.5 border border-slate-200/80 bg-slate-50/50 rounded-lg self-start">
-          <button
-            onClick={() => setFilterTab('all')}
-            className={`px-3 py-1.5 rounded-md text-[11px] font-bold transition-all ${
-              filterTab === 'all'
-                ? 'bg-white text-slate-800 shadow-xs'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            সবাই
-          </button>
-          <button
-            onClick={() => setFilterTab('dues')}
-            className={`px-3 py-1.5 rounded-md text-[11px] font-bold transition-all ${
-              filterTab === 'dues'
-                ? 'bg-red-50 text-red-800 shadow-xs border border-red-100'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            বাকি আছে
-          </button>
-          <button
-            onClick={() => setFilterTab('paid')}
-            className={`px-3 py-1.5 rounded-md text-[11px] font-bold transition-all ${
-              filterTab === 'paid'
-                ? 'bg-emerald-50 text-emerald-800 shadow-xs border border-emerald-100'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            পরিশোধিত
-          </button>
+          {(['all', 'dues', 'paid'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setFilterTab(tab)}
+              className={`px-3 py-1.5 rounded-md text-[11px] font-bold transition-all ${
+                filterTab === tab
+                  ? tab === 'dues'
+                    ? 'bg-red-50 text-red-800 shadow-xs border border-red-100'
+                    : tab === 'paid'
+                      ? 'bg-emerald-50 text-emerald-800 shadow-xs border border-emerald-100'
+                      : 'bg-white text-slate-800 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              {tab === 'all' ? 'সবাই' : tab === 'dues' ? 'বাকি আছে' : 'পরিশোধিত'}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Loading list state */}
+      {isError && (
+        <div className="rounded-lg bg-red-50 border-l-4 border-destructive p-3 text-xs font-semibold text-destructive">
+          {(error as Error)?.message || 'গ্রাহক তালিকা লোড করতে সমস্যা হয়েছে।'}
+        </div>
+      )}
+
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-12">
           <Loader2 className="h-8 w-8 text-primary animate-spin mb-2" />
@@ -127,7 +129,6 @@ export function CustomerList({ onSelectCustomer, selectedCustomerId }: CustomerL
           <p className="text-xs text-slate-400 font-bold">কোনো গ্রাহকের হিসাব খুঁজে পাওয়া যায়নি।</p>
         </div>
       ) : (
-        /* Customers grid/table layout */
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-left text-xs">
             <thead>
@@ -142,10 +143,9 @@ export function CustomerList({ onSelectCustomer, selectedCustomerId }: CustomerL
             <tbody className="divide-y divide-slate-50 font-medium text-slate-700">
               {customers.map((c) => {
                 const isSelected = c.id === selectedCustomerId;
-                
                 return (
-                  <tr 
-                    key={c.id} 
+                  <tr
+                    key={c.id}
                     className={`hover:bg-slate-50/40 cursor-pointer transition-colors ${
                       isSelected ? 'bg-primary/5 hover:bg-primary/5' : ''
                     }`}
@@ -155,10 +155,12 @@ export function CustomerList({ onSelectCustomer, selectedCustomerId }: CustomerL
                     <td className="py-3 px-3">
                       <span className="flex items-center gap-1 text-[11px] text-slate-500 font-semibold">
                         <Phone className="h-3 w-3 shrink-0 text-slate-400" />
-                        {c.phone}
+                        {c.phone || '—'}
                       </span>
                     </td>
-                    <td className="py-3 px-3 text-slate-400 font-medium truncate max-w-[150px]">{c.address || 'ঠিকানা নেই'}</td>
+                    <td className="py-3 px-3 text-slate-400 font-medium truncate max-w-[150px]">
+                      {c.address || 'ঠিকানা নেই'}
+                    </td>
                     <td className="py-3 px-3 text-right font-extrabold font-mono text-[13px]">
                       <span className={c.dueAmount > 0 ? 'text-red-600' : 'text-slate-500'}>
                         {formatTaka(c.dueAmount)}
@@ -168,8 +170,8 @@ export function CustomerList({ onSelectCustomer, selectedCustomerId }: CustomerL
                       <button
                         onClick={() => onSelectCustomer(c.id)}
                         className={`h-7 px-2.5 rounded-lg border text-[10px] font-extrabold flex items-center justify-center gap-1 mx-auto transition-colors ${
-                          isSelected 
-                            ? 'bg-primary border-primary text-white' 
+                          isSelected
+                            ? 'bg-primary border-primary text-white'
                             : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                         }`}
                       >
@@ -185,11 +187,14 @@ export function CustomerList({ onSelectCustomer, selectedCustomerId }: CustomerL
         </div>
       )}
 
-      {/* Pagination summary */}
-      <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-[10px] text-slate-400 font-semibold">
-        <span>মোট গ্রাহক: {customers?.length || 0} জন</span>
-        <span>১ম পেইজ (Pagination Auto)</span>
-      </div>
+      <CursorPagination
+        meta={meta}
+        hasPrev={hasPrev}
+        onPrev={prev}
+        onNext={() => next(meta?.nextCursor)}
+        itemLabel="গ্রাহক"
+        currentCount={customers?.length ?? 0}
+      />
     </div>
   );
 }

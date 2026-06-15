@@ -76,10 +76,10 @@ export function usePOSCustomersQuery(search = '') {
         await new Promise((resolve) => setTimeout(resolve, 100));
         
         const fallback: Customer[] = [
-          { id: 'cust-1', name: 'মোঃ আব্দুর রহমান (Rahman)', phone: '01711223344', address: 'মিরপুর ঢাকা', dueAmount: 5200, notes: 'বিশ্বস্ত কাস্টমার', createdAt: '2026-01-10' },
-          { id: 'cust-2', name: 'আবুল কালাম (Kalam)', phone: '01819876543', address: 'উত্তরা ঢাকা', dueAmount: 12000, notes: 'পাইকারি ক্রেতা', createdAt: '2026-02-15' },
-          { id: 'cust-3', name: 'সাদিয়া ইসলাম (Sadia)', phone: '01511223355', address: 'ধানমন্ডি ঢাকা', dueAmount: 0, notes: 'নগদ ক্রেতা', createdAt: '2026-03-20' },
-          { id: 'cust-4', name: 'রাসেল মিয়া (Rasel)', phone: '01912344321', address: 'মোহাম্মদপুর ঢাকা', dueAmount: 1200, notes: 'বকেয়া আংশিক পরিশোধ', createdAt: '2026-04-05' },
+          { id: 'cust-1', name: 'মোঃ আব্দুর রহমান (Rahman)', phone: '01711223344', address: 'মিরপুর ঢাকা', dueAmount: 5200, dueCents: 520000, notes: 'বিশ্বস্ত কাস্টমার', createdAt: '2026-01-10' },
+          { id: 'cust-2', name: 'আবুল কালাম (Kalam)', phone: '01819876543', address: 'উত্তরা ঢাকা', dueAmount: 12000, dueCents: 1200000, notes: 'পাইকারি ক্রেতা', createdAt: '2026-02-15' },
+          { id: 'cust-3', name: 'সাদিয়া ইসলাম (Sadia)', phone: '01511223355', address: 'ধানমন্ডি ঢাকা', dueAmount: 0, dueCents: 0, notes: 'নগদ ক্রেতা', createdAt: '2026-03-20' },
+          { id: 'cust-4', name: 'রাসেল মিয়া (Rasel)', phone: '01912344321', address: 'মোহাম্মদপুর ঢাকা', dueAmount: 1200, dueCents: 120000, notes: 'বকেয়া আংশিক পরিশোধ', createdAt: '2026-04-05' },
         ];
 
         if (search) {
