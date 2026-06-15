@@ -106,3 +106,21 @@ body {
   color: hsl(var(--foreground));
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
+
+@media print {
+  aside, header, nav, button, input, select, .print-hidden {
+    display: none !important;
+  }
+  main, .mx-auto, .max-w-7xl, #thermal-receipt-print-area {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+}
