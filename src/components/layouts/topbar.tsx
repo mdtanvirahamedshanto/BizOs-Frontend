@@ -20,6 +20,7 @@ import { useUiStore } from '@/stores/use-ui';
 import { useOffline } from '@/hooks/use-offline';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useLogoutMutation } from '@/features/authentication/api/auth-api';
+import { useNotificationStore } from '@/stores/use-notifications';
 
 // Breadcrumb path translation mapping
 const PATH_TRANSLATIONS: Record<string, string> = {
@@ -40,6 +41,11 @@ export function Topbar() {
   const isOffline = useOffline();
   const { user, role } = usePermissions();
   const { mutate: logout, isPending: isLoggingOut } = useLogoutMutation();
+  const notifications = useNotificationStore((s) => s.items);
+  const unreadCount = useNotificationStore((s) => s.unreadCount());
+  const markAllRead = useNotificationStore((s) => s.markAllRead);
+  const markRead = useNotificationStore((s) => s.markRead);
+  const clearAll = useNotificationStore((s) => s.clearAll);
 
   const handleLogout = () => {
     logout(undefined, {
@@ -158,9 +164,11 @@ export function Topbar() {
             aria-label="Toggle Notifications"
           >
             <Bell className="h-5 w-5" />
-            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-white">
-              3
-            </span>
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-white">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </button>
 
           {/* Simple Notifications Popover */}
@@ -168,24 +176,38 @@ export function Topbar() {
             <div className="absolute right-0 mt-2 w-80 rounded-xl border border-slate-200 bg-white p-2 shadow-xl animate-in fade-in-50 slide-in-from-top-5">
               <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2">
                 <span className="text-sm font-semibold text-slate-800">নোটিফিকেশন সমূহ</span>
-                <span className="text-[10px] text-primary cursor-pointer hover:underline">সব ক্লিয়ার করুন</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    markAllRead();
+                    clearAll();
+                  }}
+                  className="text-[10px] text-primary cursor-pointer hover:underline"
+                >
+                  সব ক্লিয়ার করুন
+                </button>
               </div>
               <div className="max-h-60 overflow-y-auto py-1 text-xs">
-                <div className="px-3 py-2.5 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors border-b border-slate-50">
-                  <p className="font-semibold text-slate-800">কম স্টক অ্যালার্ট</p>
-                  <p className="text-slate-500">মিনিকেট চাল ২৫ কেজি বস্তা ৩ টি বাকী আছে।</p>
-                  <span className="text-[10px] text-slate-400">২ মিনিট আগে</span>
-                </div>
-                <div className="px-3 py-2.5 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors border-b border-slate-50">
-                  <p className="font-semibold text-slate-800">ক্যাশ ইন নোটিফিকেশন</p>
-                  <p className="text-slate-500">বিকাশ এজেন্ট লেজারে ৳৫,০০০ টাকা ক্যাশ-ইন সফল হয়েছে।</p>
-                  <span className="text-[10px] text-slate-400">১৫ মিনিট আগে</span>
-                </div>
-                <div className="px-3 py-2.5 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors">
-                  <p className="font-semibold text-slate-800">অফলাইন সিঙ্ক</p>
-                  <p className="text-slate-500">১২টি অফলাইন সেলস ডাটা সফলভাবে সার্ভারে সিঙ্ক হয়েছে।</p>
-                  <span className="text-[10px] text-slate-400">১ ঘন্টা আগে</span>
-                </div>
+                {notifications.length === 0 ? (
+                  <p className="px-3 py-6 text-center text-slate-400">কোনো নোটিফিকেশন নেই</p>
+                ) : (
+                  notifications.map((notification) => (
+                    <button
+                      key={notification.id}
+                      type="button"
+                      onClick={() => markRead(notification.id)}
+                      className={`w-full text-left px-3 py-2.5 hover:bg-slate-50 rounded-lg transition-colors border-b border-slate-50 ${
+                        notification.read ? 'opacity-70' : ''
+                      }`}
+                    >
+                      <p className="font-semibold text-slate-800">{notification.title}</p>
+                      <p className="text-slate-500">{notification.body}</p>
+                      <span className="text-[10px] text-slate-400">
+                        {new Date(notification.timestamp).toLocaleString('bn-BD')}
+                      </span>
+                    </button>
+                  ))
+                )}
               </div>
             </div>
           )}

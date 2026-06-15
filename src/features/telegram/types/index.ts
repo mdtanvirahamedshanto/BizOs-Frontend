@@ -4,6 +4,7 @@ export interface TelegramAccount {
   userId?: string;
   firstName?: string;
   photoUrl?: string;
+  linkedAt?: string;
 }
 
 export interface TelegramBot {

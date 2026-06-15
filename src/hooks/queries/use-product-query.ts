@@ -113,7 +113,10 @@ export function useProductsQuery(params?: ProductQueryParams) {
 /**
  * Infinite query for products list, primary layout for POS cashier item search.
  */
-export function useInfiniteProductsQuery(params?: ProductQueryParams) {
+export function useInfiniteProductsQuery(
+  params?: ProductQueryParams,
+  options?: { enabled?: boolean },
+) {
   return useInfiniteQuery<PaginatedResponse<Product>>({
     queryKey: queryKeys.products.list(params),
     queryFn: ({ pageParam }) =>
@@ -124,6 +127,7 @@ export function useInfiniteProductsQuery(params?: ProductQueryParams) {
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => lastPage.meta.nextCursor ?? undefined,
     staleTime: 5 * 60 * 1000,
+    enabled: options?.enabled ?? true,
   });
 }
 

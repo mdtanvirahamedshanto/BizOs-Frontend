@@ -8,15 +8,17 @@ export interface LocalProduct {
   price: number;
   costPrice: number;
   stockCount: number;
-  unit: string; // e.g. 'kg', 'pcs', 'litre'
+  unit: string;
   categoryId?: string;
-  vatRate?: number; // VAT percentage
+  vatRate?: number;
+  serverUpdatedAt?: number;
   updatedAt: number;
 }
 
 export interface LocalCategory {
   id: string;
   name: string;
+  serverUpdatedAt?: number;
   updatedAt: number;
 }
 
@@ -24,14 +26,26 @@ export interface LocalCustomer {
   id: string;
   name: string;
   phone: string;
-  dueAmount: number; // For wholesale customer ledgers
+  dueAmount: number;
+  serverUpdatedAt?: number;
   updatedAt: number;
 }
 
+export interface SyncMetaRecord {
+  key: string;
+  lastSyncedAt: number;
+  productCount?: number;
+  customerCount?: number;
+}
+
+export type OutboxType = 'sale_create' | 'stock_adjustment' | 'ledger_create';
+
 export interface OutboxTransaction {
-  id: string; // UUID/GUID
-  type: 'sale_create' | 'stock_adjustment' | 'ledger_create';
-  payload: any; // Direct structured request body
+  id: string;
+  idempotencyKey: string;
+  type: OutboxType;
+  payload: unknown;
+  clientTimestamp: number;
   timestamp: number;
   status: 'pending' | 'processing' | 'failed';
   retryCount: number;
@@ -43,36 +57,43 @@ export class BizOSDatabase extends Dexie {
   categories!: Table<LocalCategory>;
   customers!: Table<LocalCustomer>;
   outbox!: Table<OutboxTransaction>;
+  syncMeta!: Table<SyncMetaRecord>;
 
   constructor() {
     super('BizOS_LocalDB');
-    
-    // Define database schema versions and indexes
-    // Note: only index fields that we intend to query on (like barcodes, phone numbers, or sync status)
+
     this.version(1).stores({
       products: 'id, &barcode, name, categoryId, updatedAt',
       categories: 'id, name, updatedAt',
       customers: 'id, name, &phone, updatedAt',
       outbox: 'id, type, timestamp, status',
     });
+
+    this.version(2).stores({
+      products: 'id, &barcode, name, categoryId, updatedAt, serverUpdatedAt',
+      categories: 'id, name, updatedAt, serverUpdatedAt',
+      customers: 'id, name, &phone, updatedAt, serverUpdatedAt',
+      outbox: 'id, idempotencyKey, type, timestamp, status, clientTimestamp',
+      syncMeta: 'key, lastSyncedAt',
+    });
   }
 
-  /**
-   * Helper to append a transaction to the sync outbox
-   */
-  async queueTransaction(
-    type: OutboxTransaction['type'],
-    payload: any
-  ): Promise<string> {
+  async queueTransaction(type: OutboxType, payload: unknown): Promise<string> {
     const id = crypto.randomUUID();
+    const idempotencyKey = crypto.randomUUID();
+    const now = Date.now();
+
     await this.outbox.add({
       id,
+      idempotencyKey,
       type,
       payload,
-      timestamp: Date.now(),
+      clientTimestamp: now,
+      timestamp: now,
       status: 'pending',
       retryCount: 0,
     });
+
     return id;
   }
 }

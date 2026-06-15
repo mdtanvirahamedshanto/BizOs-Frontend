@@ -1,4 +1,5 @@
-const CACHE_NAME = 'bizos-cache-v1';
+const CACHE_NAME = 'bizos-cache-v2';
+const SYNC_TAG = 'bizos-outbox-sync';
 const ASSETS_TO_CACHE = [
   '/',
   '/manifest.json',
@@ -86,4 +87,17 @@ self.addEventListener('fetch', (event) => {
         });
       })
   );
+});
+
+// 4. Background Sync — notify app clients to replay offline outbox
+self.addEventListener('sync', (event) => {
+  if (event.tag === SYNC_TAG) {
+    event.waitUntil(
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: 'SYNC_OUTBOX' });
+        });
+      }),
+    );
+  }
 });

@@ -9,6 +9,8 @@ import { CheckoutInput } from '../types';
 import { usePOSHistoryStore } from '../stores/use-pos-history';
 import { db } from '@/lib/db';
 import { usePwaStore } from '@/features/pwa/stores/use-pwa-store';
+import { registerBackgroundSync } from '@/lib/offline/sync-engine';
+import { useOffline } from '@/hooks/use-offline';
 import { MOCK_PRODUCTS } from './pos-mocks';
 
 export interface CheckoutResultItem {
@@ -40,13 +42,47 @@ export interface CheckoutResult {
  * Hook to retrieve products catalog in POS screen (fast lookup)
  */
 export function usePOSProductsQuery(search = '') {
-  const query = useInfiniteProductsQuery({
-    search: search || undefined,
-    isActive: true,
-    limit: 50,
+  const isOffline = useOffline();
+  const query = useInfiniteProductsQuery(
+    {
+      search: search || undefined,
+      isActive: true,
+      limit: 50,
+    },
+    { enabled: !isOffline },
+  );
+
+  const offlineQuery = useQuery({
+    queryKey: ['pos', 'offline-products', search],
+    queryFn: async () => {
+      const { getOfflineProducts } = await import('@/lib/offline/cache-sync');
+      return getOfflineProducts(search);
+    },
+    enabled: isOffline,
+    staleTime: 60_000,
   });
 
   const products = useMemo(() => {
+    if (isOffline) {
+      const cached = offlineQuery.data ?? [];
+      return cached.map(
+        (p): Product => ({
+          id: p.id,
+          name: p.name,
+          barcode: p.barcode,
+          sku: p.sku ?? '',
+          price: p.price,
+          costPrice: p.costPrice,
+          stockCount: p.stockCount,
+          unit: p.unit,
+          categoryId: p.categoryId,
+          lowStockThreshold: 0,
+          isActive: true,
+          createdAt: new Date(p.updatedAt).toISOString(),
+        }),
+      );
+    }
+
     const pages = query.data?.pages ?? [];
     const fromApi = pages.flatMap((page) => page.data.map(toProductView));
     if (fromApi.length > 0) return fromApi;
@@ -61,10 +97,10 @@ export function usePOSProductsQuery(search = '') {
       );
     }
     return MOCK_PRODUCTS;
-  }, [query.data, search]);
+  }, [isOffline, offlineQuery.data, query.data, search]);
 
   return {
-    ...query,
+    ...(isOffline ? offlineQuery : query),
     data: products,
   };
 }
@@ -182,6 +218,7 @@ export function usePOSCheckoutMutation() {
         if (db) {
           await db.queueTransaction('sale_create', input);
           usePwaStore.getState().updateOutboxCount();
+          registerBackgroundSync();
         }
         throw new Error('Offline mode active');
       }
