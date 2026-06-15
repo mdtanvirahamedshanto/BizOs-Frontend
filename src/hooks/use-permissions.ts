@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { useAuthStore, UserRole } from '@/stores/use-auth';
 
 // Define granular permission types
 export type Permission = 
@@ -10,31 +10,6 @@ export type Permission =
   | 'ledger:write'
   | 'reports:read'
   | 'settings:write';
-
-export type UserRole = 'Owner' | 'Manager' | 'Cashier';
-
-interface AuthState {
-  user: {
-    id: string;
-    name: string;
-    phone: string;
-    role: UserRole;
-  } | null;
-  setRole: (role: UserRole) => void;
-}
-
-// Global Auth Store mock for UI demonstration & local RBAC checks
-export const useAuthStore = create<AuthState>()((set) => ({
-  user: {
-    id: 'usr-001',
-    name: 'তানভীর আহমেদ (Tanvir)',
-    phone: '01712345678',
-    role: 'Owner', // Default role is Owner for initial setup
-  },
-  setRole: (role) => set((state) => ({
-    user: state.user ? { ...state.user, role } : null
-  })),
-}));
 
 // Pre-defined role permissions mapping
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
