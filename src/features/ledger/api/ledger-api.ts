@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { SupplierInput, SettlementRecordInput } from '../types';
+import { db } from '@/lib/db';
+import { usePwaStore } from '@/features/pwa/stores/use-pwa-store';
 
 export interface Supplier {
   id: string;
@@ -168,10 +170,23 @@ export function useRecordSupplierSettlementMutation() {
 
   return useMutation({
     mutationFn: async (data: { supplierId: string; input: SettlementRecordInput }) => {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+
+      if (isOffline) {
+        console.log('[Ledger API] Client is offline. Queuing settlement record to outbox.');
+        if (db) {
+          await db.queueTransaction('ledger_create', data);
+          usePwaStore.getState().updateOutboxCount();
+        }
+      }
+
       try {
+        if (isOffline) {
+          throw new Error('Offline mode active');
+        }
         return await apiClient.post<SupplierLedgerItem>(`/suppliers/${data.supplierId}/settle`, data.input);
       } catch (error) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 300));
         
         const supplier = MOCK_SUPPLIERS.find((s) => s.id === data.supplierId);
         if (!supplier) throw new Error('Supplier not found');

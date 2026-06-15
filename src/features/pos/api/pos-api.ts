@@ -5,6 +5,8 @@ import { Product } from '@/features/inventory/api/inventory-api';
 import { Customer } from '@/features/customers/api/customers-api';
 import { CheckoutInput } from '../types';
 import { usePOSHistoryStore } from '../stores/use-pos-history';
+import { db } from '@/lib/db';
+import { usePwaStore } from '@/features/pwa/stores/use-pwa-store';
 
 export const MOCK_PRODUCTS = [
   { id: 'p-1', name: 'মিনিকেট চাল ২৫ কেজি', sku: 'MC-25', barcode: '8901234567890', price: 1500, costPrice: 1350, stockCount: 5, unit: 'বস্তা', categoryId: 'cat-1', brand: 'তীর', createdAt: '2026-05-01' },
@@ -107,11 +109,26 @@ export function usePOSCheckoutMutation() {
 
   return useMutation({
     mutationFn: async (data: CheckoutInput): Promise<CheckoutResult> => {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+
+      if (isOffline) {
+        console.log('[POS API] Client is offline. Queuing sale to outbox.');
+        if (db) {
+          await db.queueTransaction('sale_create', data);
+          // Update local outbox count in store
+          usePwaStore.getState().updateOutboxCount();
+        }
+      }
+
       try {
+        if (isOffline) {
+          // Trigger offline simulation directly instead of making an API request
+          throw new Error('Offline mode active');
+        }
         return await apiClient.post<CheckoutResult>('/pos/checkout', data);
       } catch (error) {
-        console.warn('[POS API] Checkout failed. Simulating successful local transaction.', error);
-        await new Promise((resolve) => setTimeout(resolve, 800));
+        console.warn('[POS API] Checkout request bypass/failure. Simulating offline local checkout receipt.', error);
+        await new Promise((resolve) => setTimeout(resolve, 300));
 
         // Calculate checkout metrics
         const totalAmount = data.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);

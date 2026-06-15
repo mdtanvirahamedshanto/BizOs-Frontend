@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { ProductInput, AdjustmentInput } from '../types';
+import { db } from '@/lib/db';
+import { usePwaStore } from '@/features/pwa/stores/use-pwa-store';
 
 export interface Product {
   id: string;
@@ -263,10 +265,23 @@ export function useAdjustStockMutation() {
 
   return useMutation({
     mutationFn: async (data: { productId: string; input: AdjustmentInput }) => {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+
+      if (isOffline) {
+        console.log('[Inventory API] Client is offline. Queuing stock adjustment to outbox.');
+        if (db) {
+          await db.queueTransaction('stock_adjustment', data);
+          usePwaStore.getState().updateOutboxCount();
+        }
+      }
+
       try {
+        if (isOffline) {
+          throw new Error('Offline mode active');
+        }
         return await apiClient.post<Product>(`/products/${data.productId}/adjust`, data.input);
       } catch (error) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 300));
 
         const product = MOCK_PRODUCTS.find((p) => p.id === data.productId);
         if (!product) throw new Error('Product not found');

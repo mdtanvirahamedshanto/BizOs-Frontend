@@ -20,6 +20,12 @@ const hindSiliguri = Hind_Siliguri({
 export const metadata: Metadata = {
   title: "BizOS | SME Business Operating System & POS",
   description: "All-in-one operating system and offline-first POS for retail, wholesale, and ledgers in Bangladesh.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "BizOS",
+  },
 };
 
 export default function RootLayout({
