@@ -74,11 +74,13 @@ export function SalesChart({ data }: SalesChartProps) {
   }, [expensePoints]);
 
   // Generate grid values for Y axis (4 segments)
-  const yGridLines = Array.from({ length: 4 }).map((_, idx) => {
-    const val = (maxVal / 3) * idx;
-    const y = paddingTop + chartHeight - (val / maxVal) * chartHeight;
-    return { y, val: Math.round(val) };
-  });
+  const yGridLines = useMemo(() => {
+    return Array.from({ length: 4 }).map((_, idx) => {
+      const val = (maxVal / 3) * idx;
+      const y = paddingTop + chartHeight - (val / maxVal) * chartHeight;
+      return { y, val: Math.round(val) };
+    });
+  }, [maxVal, paddingTop, chartHeight]);
 
   return (
     <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs w-full">
@@ -104,7 +106,10 @@ export function SalesChart({ data }: SalesChartProps) {
         <svg
           viewBox={`0 0 ${svgWidth} ${svgHeight}`}
           className="w-full min-w-[500px] h-auto"
+          role="img"
+          aria-label="বিক্রি ও খরচের ট্রেন্ড চার্ট (Sales & Expense Trends Chart)"
         >
+          <title>বিক্রি ও খরচের ট্রেন্ড চার্ট (Sales & Expense Trends Chart)</title>
           <defs>
             {/* Sales gradient overlay */}
             <linearGradient id="sales-gradient" x1="0" y1="0" x2="0" y2="1">

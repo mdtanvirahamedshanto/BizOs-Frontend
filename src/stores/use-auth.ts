@@ -29,7 +29,7 @@ const setCookie = (name: string, value: string, days = 7) => {
   const date = new Date();
   date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
   const expires = `; expires=${date.toUTCString()}`;
-  document.cookie = `${name}=${encodeURIComponent(value)}${expires}; path=/; SameSite=Lax; Secure`;
+  document.cookie = `${name}=${encodeURIComponent(value)}${expires}; path=/; SameSite=Strict; Secure`;
 };
 
 const getCookie = (name: string): string | null => {
@@ -46,7 +46,7 @@ const getCookie = (name: string): string | null => {
 
 const deleteCookie = (name: string) => {
   if (typeof window === 'undefined') return;
-  document.cookie = `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax; Secure`;
+  document.cookie = `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Strict; Secure`;
 };
 
 export const useAuthStore = create<AuthState>()((set) => ({

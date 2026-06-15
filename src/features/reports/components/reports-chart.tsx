@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 
 interface ReportsChartProps {
   data: { label: string; sales: number; cost: number; expense: number }[];
@@ -15,14 +15,34 @@ export function ReportsChart({ data }: ReportsChartProps) {
   const maxVal = Math.max(...data.map((d) => Math.max(d.sales, d.cost, d.expense)), 1000);
 
   // SVG Area path generation helpers
-  const getX = (index: number) => padding + (index * (width - 2 * padding)) / (data.length - 1);
+  const getX = (index: number) => padding + (index * (width - 2 * padding)) / Math.max(data.length - 1, 1);
   const getY = (val: number) => height - padding - (val * (height - 2 * padding)) / maxVal;
 
-  const salesPoints = data.map((d, i) => `${getX(i)},${getY(d.sales)}`).join(' ');
-  const expensePoints = data.map((d, i) => `${getX(i)},${getY(d.expense)}`).join(' ');
+  const points = useMemo(() => {
+    if (data.length === 0) {
+      return {
+        salesPoints: '',
+        expensePoints: '',
+        salesAreaPoints: '',
+        expenseAreaPoints: ''
+      };
+    }
 
-  const salesAreaPoints = `${padding},${height - padding} ${salesPoints} ${width - padding},${height - padding}`;
-  const expenseAreaPoints = `${padding},${height - padding} ${expensePoints} ${width - padding},${height - padding}`;
+    const sPoints = data.map((d, i) => `${getX(i)},${getY(d.sales)}`).join(' ');
+    const ePoints = data.map((d, i) => `${getX(i)},${getY(d.expense)}`).join(' ');
+
+    const sAreaPoints = `${padding},${height - padding} ${sPoints} ${width - padding},${height - padding}`;
+    const eAreaPoints = `${padding},${height - padding} ${ePoints} ${width - padding},${height - padding}`;
+
+    return {
+      salesPoints: sPoints,
+      expensePoints: ePoints,
+      salesAreaPoints: sAreaPoints,
+      expenseAreaPoints: eAreaPoints
+    };
+  }, [data, maxVal]);
+
+  const { salesPoints, expensePoints, salesAreaPoints, expenseAreaPoints } = points;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:grid-cols-2 print:gap-4">
@@ -34,7 +54,13 @@ export function ReportsChart({ data }: ReportsChartProps) {
         </div>
 
         <div className="relative w-full overflow-x-auto">
-          <svg viewBox={`0 0 ${width} ${height}`} className="w-full min-w-[320px] overflow-visible">
+          <svg 
+            viewBox={`0 0 ${width} ${height}`} 
+            className="w-full min-w-[320px] overflow-visible"
+            role="img"
+            aria-label="বিক্রয় বনাম খরচের এরিয়া চার্ট (Sales vs Expenses Area Chart)"
+          >
+            <title>বিক্রয় বনাম খরচ (Sales vs Expenses)</title>
             {/* Grid Lines */}
             {Array.from({ length: 5 }).map((_, idx) => {
               const yVal = getY((maxVal / 4) * idx);
@@ -120,7 +146,13 @@ export function ReportsChart({ data }: ReportsChartProps) {
         </div>
 
         <div className="relative w-full overflow-x-auto">
-          <svg viewBox={`0 0 ${width} ${height}`} className="w-full min-w-[320px] overflow-visible">
+          <svg 
+            viewBox={`0 0 ${width} ${height}`} 
+            className="w-full min-w-[320px] overflow-visible"
+            role="img"
+            aria-label="বিক্রয় বনাম ক্রয়মূল্যের বার চার্ট (Sales vs Cost Bar Chart)"
+          >
+            <title>বিক্রয় বনাম ক্রয়মূল্য (Sales vs Cost)</title>
             {/* Grid Lines */}
             {Array.from({ length: 5 }).map((_, idx) => {
               const yVal = getY((maxVal / 4) * idx);

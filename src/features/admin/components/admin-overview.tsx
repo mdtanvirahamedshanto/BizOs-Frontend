@@ -36,10 +36,14 @@ export function AdminOverview({ onNavigate }: AdminOverviewProps) {
   const getX = (index: number) => padding + (index * (chartWidth - 2 * padding)) / Math.max(chartData.length - 1, 1);
   const getY = (val: number) => chartHeight - padding - (val * (chartHeight - 2 * padding)) / maxRevenue;
 
-  const points = chartData.map((d, i) => `${getX(i)},${getY(d.revenue)}`).join(' ');
-  const areaPoints = chartData.length > 0 
-    ? `${padding},${chartHeight - padding} ${points} ${getX(chartData.length - 1)},${chartHeight - padding}` 
-    : '';
+  const pointsData = React.useMemo(() => {
+    if (chartData.length === 0) return { points: '', areaPoints: '' };
+    const pts = chartData.map((d, i) => `${getX(i)},${getY(d.revenue)}`).join(' ');
+    const aPts = `${padding},${chartHeight - padding} ${pts} ${getX(chartData.length - 1)},${chartHeight - padding}`;
+    return { points: pts, areaPoints: aPts };
+  }, [chartData, maxRevenue, chartWidth, chartHeight]);
+
+  const { points, areaPoints } = pointsData;
 
   if (isOverviewLoading || isTicketsLoading) {
     return (
@@ -65,48 +69,48 @@ export function AdminOverview({ onNavigate }: AdminOverviewProps) {
         {/* MRR Card */}
         <div className="bg-gradient-to-br from-indigo-900 to-indigo-800 text-white rounded-2xl p-5 shadow-sm space-y-2 border border-indigo-700/50 hover:shadow-indigo-500/10 hover:shadow-lg transition-all">
           <div className="flex justify-between items-center">
-            <span className="text-xs font-semibold text-indigo-200">মাসিক সাবস্ক্রিপশন আয় (MRR)</span>
+            <span className="text-xs font-semibold text-indigo-100">মাসিক সাবস্ক্রিপশন আয় (MRR)</span>
             <DollarSign className="h-5 w-5 text-indigo-300" />
           </div>
           <div className="space-y-1">
             <h3 className="text-2xl font-black">${overview?.mrr.toLocaleString()}</h3>
-            <p className="text-[10px] text-indigo-300">Monthly Recurring Revenue</p>
+            <p className="text-[10px] font-bold text-indigo-200">Monthly Recurring Revenue</p>
           </div>
         </div>
 
         {/* ARR Card */}
         <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs space-y-2 hover:shadow-md transition-all">
           <div className="flex justify-between items-center">
-            <span className="text-xs font-semibold text-slate-500">বাৎসরিক সাবস্ক্রিপশন আয় (ARR)</span>
-            <TrendingUp className="h-5 w-5 text-emerald-500" />
+            <span className="text-xs font-semibold text-slate-600">বাৎসরিক সাবস্ক্রিপশন আয় (ARR)</span>
+            <TrendingUp className="h-5 w-5 text-emerald-600" />
           </div>
           <div className="space-y-1">
             <h3 className="text-2xl font-bold text-slate-800">${overview?.arr.toLocaleString()}</h3>
-            <p className="text-[10px] text-slate-400">Annual Recurring Revenue</p>
+            <p className="text-[10px] font-bold text-slate-500">Annual Recurring Revenue</p>
           </div>
         </div>
 
         {/* Paid Subscriptions Card */}
         <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs space-y-2 hover:shadow-md transition-all">
           <div className="flex justify-between items-center">
-            <span className="text-xs font-semibold text-slate-500">পেইড সাবস্ক্রিপশন মার্চেন্ট</span>
+            <span className="text-xs font-semibold text-slate-600">পেইড সাবস্ক্রিপশন মার্চেন্ট</span>
             <CreditCard className="h-5 w-5 text-indigo-600" />
           </div>
           <div className="space-y-1">
             <h3 className="text-2xl font-bold text-slate-800">{overview?.activePaidSubscriptions}</h3>
-            <p className="text-[10px] text-slate-400">Active Paid Subscriptions</p>
+            <p className="text-[10px] font-bold text-slate-500">Active Paid Subscriptions</p>
           </div>
         </div>
 
         {/* Growth Rate Card */}
         <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs space-y-2 hover:shadow-md transition-all">
           <div className="flex justify-between items-center">
-            <span className="text-xs font-semibold text-slate-500">মার্চেন্ট প্রবৃদ্ধি হার</span>
+            <span className="text-xs font-semibold text-slate-600">মার্চেন্ট প্রবৃদ্ধি হার</span>
             <Users className="h-5 w-5 text-indigo-600" />
           </div>
           <div className="space-y-1">
             <h3 className="text-2xl font-bold text-slate-800">+{overview?.merchantGrowthRate}%</h3>
-            <p className="text-[10px] text-slate-400">Monthly Registration Growth</p>
+            <p className="text-[10px] font-bold text-slate-500">Monthly Registration Growth</p>
           </div>
         </div>
       </div>
@@ -124,7 +128,13 @@ export function AdminOverview({ onNavigate }: AdminOverviewProps) {
           </div>
 
           <div className="relative w-full overflow-visible">
-            <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-auto overflow-visible">
+            <svg 
+              viewBox={`0 0 ${chartWidth} ${chartHeight}`} 
+              className="w-full h-auto overflow-visible"
+              role="img"
+              aria-label="সাবস্ক্রিপশন রেভিনিউ প্রবৃদ্ধি (Monthly Revenue Trend Chart)"
+            >
+              <title>সাবস্ক্রিপশন রেভিনিউ প্রবৃদ্ধি (Monthly Revenue Trend)</title>
               <defs>
                 <linearGradient id="mrrGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.2" />
