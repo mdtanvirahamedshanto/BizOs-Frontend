@@ -109,6 +109,8 @@ export const queryKeys = {
     all: ['expenses'] as const,
     lists: () => [...queryKeys.expenses.all, 'list'] as const,
     list: (params?: ExpenseQueryParams) => [...queryKeys.expenses.lists(), params ?? {}] as const,
+    details: () => [...queryKeys.expenses.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.expenses.details(), id] as const,
     categories: () => [...queryKeys.expenses.all, 'categories'] as const,
     recurrings: () => [...queryKeys.expenses.all, 'recurrings'] as const,
     recurringList: (params?: RecurringExpenseQueryParams) => [...queryKeys.expenses.recurrings(), params ?? {}] as const,

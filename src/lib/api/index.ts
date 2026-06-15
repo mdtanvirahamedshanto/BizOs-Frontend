@@ -49,9 +49,12 @@ export type {
   AuthUser,
   AuthTokens,
   AuthResult,
+  CsrfTokenResponse,
   RegisterRequest,
   LoginRequest,
   ChangePasswordRequest,
+  PasswordResetRequestDTO,
+  PasswordResetConfirmRequest,
   OtpRequestDTO,
   OtpVerifyRequest,
 } from './modules/auth.api';
@@ -139,6 +142,7 @@ export type {
   KhataPartyType,
   KhataEntryType,
   KhataQueryParams,
+  KhataEntryQueryParams,
   RecordCollectionRequest,
   RecordRepaymentRequest,
   KhataAdjustmentRequest,
@@ -210,6 +214,7 @@ export type {
   DashboardTimeframe,
   ReportType,
   DashboardQueryParams,
+  ReportDateRangeParams,
   GenerateReportRequest,
   GeneratedReport,
 } from './modules/reports.api';
