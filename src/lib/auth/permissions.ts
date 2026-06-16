@@ -18,7 +18,12 @@ export type Permission =
   | 'ledger:read'
   | 'ledger:write'
   | 'reports:read'
-  | 'settings:write';
+  | 'settings:write'
+  | 'mfs:read'
+  | 'flexiload:read'
+  | 'telegram:read'
+  | 'customers:read'
+  | 'cashbook:read';
 
 /** Minimum backend permission required for each UI capability */
 const UI_PERMISSION_REQUIREMENTS: Record<Permission, string[]> = {
@@ -34,6 +39,11 @@ const UI_PERMISSION_REQUIREMENTS: Record<Permission, string[]> = {
   'ledger:write': ['khata.write', 'khata.update'],
   'reports:read': ['reports.read'],
   'settings:write': ['*'],
+  'mfs:read': ['mfs.read'],
+  'flexiload:read': ['flexiload.read'],
+  'telegram:read': ['telegram.read'],
+  'customers:read': ['customers.read'],
+  'cashbook:read': ['cashbook.read'],
 };
 
 /**

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api-client';
+import { mfs, flexiload } from '@/lib/api';
 import { MfsTransactionInput, FlexiloadTransactionInput } from '../types';
 
 export interface MfsTransaction {
@@ -39,129 +39,188 @@ export interface MobileServicesSummary {
   totalFlexiloadRechargesCount: number;
 }
 
-// Memory local databases
-let MOCK_MFS_TRANSACTIONS: MfsTransaction[] = [
-  { id: 'mfs-1', provider: 'bkash', type: 'cash_out', mobileNumber: '01711223344', amount: 5000, fee: 92.5, commission: 21.4, transactionId: 'BKB821038', timestamp: '2026-06-15 10:30', status: 'success' },
-  { id: 'mfs-2', provider: 'nagad', type: 'cash_in', mobileNumber: '01819876543', amount: 2000, fee: 0, commission: 0, transactionId: 'NGD910238', timestamp: '2026-06-15 09:15', status: 'success' },
-  { id: 'mfs-3', provider: 'rocket', type: 'send_money', mobileNumber: '01511223355', amount: 1500, fee: 5, commission: 0, transactionId: 'RCK810239', timestamp: '2026-06-14 18:45', status: 'success' },
-];
+// ─── Auto-seeding Helpers ───────────────────────────────────────────────────
 
-let MOCK_FLEXILOAD_TRANSACTIONS: FlexiloadTransaction[] = [
-  { id: 'fl-1', operator: 'gp', connectionType: 'prepaid', mobileNumber: '01712345678', amount: 100, commission: 2.8, transactionId: 'FLG82103', timestamp: '2026-06-15 11:00', status: 'success' },
-  { id: 'fl-2', operator: 'robi', connectionType: 'prepaid', mobileNumber: '01812345678', amount: 250, commission: 7.0, transactionId: 'FLR91023', timestamp: '2026-06-15 10:15', status: 'success' },
-  { id: 'fl-3', operator: 'banglalink', connectionType: 'postpaid', mobileNumber: '01912345678', amount: 500, commission: 14.0, transactionId: 'FLB81023', timestamp: '2026-06-14 15:30', status: 'success' },
-];
+async function ensureMfsAccounts() {
+  const accounts = await mfs.listMfsAccounts();
+  const providers: Array<'BKASH' | 'NAGAD' | 'ROCKET' | 'UPAY'> = ['BKASH', 'NAGAD', 'ROCKET', 'UPAY'];
+  const results = [...accounts];
+  for (const provider of providers) {
+    if (!accounts.some((a) => a.provider === provider)) {
+      const newAcc = await mfs.createMfsAccount({
+        provider,
+        accountNumber:
+          provider === 'BKASH'
+            ? '01711223344'
+            : provider === 'NAGAD'
+            ? '01819876543'
+            : provider === 'ROCKET'
+            ? '01511223355'
+            : '01911223366',
+        accountType: 'AGENT',
+        balanceCents: 5000000, // starting float 50,000 taka
+        isActive: true,
+      });
+      results.push(newAcc);
+    }
+  }
+  return results;
+}
 
-let MOCK_SUMMARY: MobileServicesSummary = {
-  bkashBalance: 25400,
-  nagadBalance: 18200,
-  rocketBalance: 8500,
-  upayBalance: 3200,
-  totalCommissions: 285.2,
-  totalMFSTransactionsCount: 3,
-  totalFlexiloadRechargesCount: 3,
-};
+async function ensureFlexiloadAccounts() {
+  const accounts = await flexiload.listFlexiloadAccounts();
+  const operators: Array<'GP' | 'ROBI' | 'AIRTEL' | 'BL' | 'TELETALK'> = [
+    'GP',
+    'ROBI',
+    'AIRTEL',
+    'BL',
+    'TELETALK',
+  ];
+  const results = [...accounts];
+  for (const operator of operators) {
+    if (!accounts.some((a) => a.operator === operator)) {
+      const newAcc = await flexiload.createFlexiloadAccount({
+        operator,
+        accountNumber:
+          operator === 'GP'
+            ? '01712345678'
+            : operator === 'ROBI'
+            ? '01812345678'
+            : operator === 'AIRTEL'
+            ? '01612345678'
+            : operator === 'BL'
+            ? '01912345678'
+            : '01512345678',
+        balanceCents: 5000000, // starting float 50,000 taka
+        isActive: true,
+      });
+      results.push(newAcc);
+    }
+  }
+  return results;
+}
 
-/**
- * Hook to retrieve MFS transactions ledger
- */
+function mapOperatorToBackend(op: string): 'GP' | 'ROBI' | 'AIRTEL' | 'BL' | 'TELETALK' {
+  if (op === 'banglalink') return 'BL';
+  return op.toUpperCase() as any;
+}
+
+function mapOperatorToFrontend(op: string): 'gp' | 'robi' | 'banglalink' | 'airtel' | 'teletalk' {
+  if (op === 'BL') return 'banglalink';
+  return op.toLowerCase() as any;
+}
+
+function mapBackendMfsToFrontend(tx: any): MfsTransaction {
+  return {
+    id: tx.id,
+    provider: (tx.mfsAccount?.provider || 'bkash').toLowerCase() as any,
+    type: tx.type.toLowerCase() as any,
+    mobileNumber: tx.customerPhone,
+    amount: tx.amountCents / 100,
+    fee: tx.feeCents / 100,
+    commission: tx.commissionCents / 100,
+    transactionId: tx.txid || '',
+    notes: tx.notes || '',
+    timestamp: new Date(tx.createdAt).toISOString().replace('T', ' ').substring(0, 16),
+    status: (tx.status || 'SUCCESS').toLowerCase() as any,
+  };
+}
+
+function mapBackendFlexiloadToFrontend(tx: any): FlexiloadTransaction {
+  return {
+    id: tx.id,
+    operator: mapOperatorToFrontend(tx.account?.operator || 'GP'),
+    connectionType: (tx.connectionType || 'PREPAID').toLowerCase() as any,
+    mobileNumber: tx.recipientPhone,
+    amount: tx.amountCents / 100,
+    commission: tx.commissionCents / 100,
+    transactionId: tx.id,
+    notes: '',
+    timestamp: new Date(tx.createdAt).toISOString().replace('T', ' ').substring(0, 16),
+    status: (tx.status || 'SUCCESS').toLowerCase() as any,
+  };
+}
+
+// ─── API Hooks ──────────────────────────────────────────────────────────────
+
 export function useMFSTransactionsQuery() {
   return useQuery({
     queryKey: ['mobile-services', 'mfs-transactions'],
     queryFn: async (): Promise<MfsTransaction[]> => {
-      try {
-        return await apiClient.get<MfsTransaction[]>('/mobile-services/mfs');
-      } catch (error) {
-        await new Promise((resolve) => setTimeout(resolve, 200));
-        return [...MOCK_MFS_TRANSACTIONS];
-      }
+      await ensureMfsAccounts();
+      const res = await mfs.listMfsTransactions({ limit: 100 });
+      return res.data.map(mapBackendMfsToFrontend);
     },
   });
 }
 
-/**
- * Hook to retrieve Flexiload transactions ledger
- */
 export function useFlexiloadTransactionsQuery() {
   return useQuery({
     queryKey: ['mobile-services', 'flexiload-transactions'],
     queryFn: async (): Promise<FlexiloadTransaction[]> => {
-      try {
-        return await apiClient.get<FlexiloadTransaction[]>('/mobile-services/flexiload');
-      } catch (error) {
-        await new Promise((resolve) => setTimeout(resolve, 200));
-        return [...MOCK_FLEXILOAD_TRANSACTIONS];
-      }
+      await ensureFlexiloadAccounts();
+      const res = await flexiload.listFlexiloadRecharges({ limit: 100 });
+      return res.data.map(mapBackendFlexiloadToFrontend);
     },
   });
 }
 
-/**
- * Hook to retrieve Mobile Services dashboard totals
- */
 export function useMobileServicesSummaryQuery() {
   return useQuery({
     queryKey: ['mobile-services', 'summary'],
     queryFn: async (): Promise<MobileServicesSummary> => {
-      try {
-        return await apiClient.get<MobileServicesSummary>('/mobile-services/summary');
-      } catch (error) {
-        await new Promise((resolve) => setTimeout(resolve, 150));
-        return { ...MOCK_SUMMARY };
-      }
+      const mfsAccounts = await ensureMfsAccounts();
+      const flexiAccounts = await ensureFlexiloadAccounts();
+
+      const mfsTxs = await mfs.listMfsTransactions({ limit: 1000 });
+      const flexiTxs = await flexiload.listFlexiloadRecharges({ limit: 1000 });
+
+      const bkashBalance = (mfsAccounts.find((a) => a.provider === 'BKASH')?.balanceCents || 0) / 100;
+      const nagadBalance = (mfsAccounts.find((a) => a.provider === 'NAGAD')?.balanceCents || 0) / 100;
+      const rocketBalance = (mfsAccounts.find((a) => a.provider === 'ROCKET')?.balanceCents || 0) / 100;
+      const upayBalance = (mfsAccounts.find((a) => a.provider === 'UPAY')?.balanceCents || 0) / 100;
+
+      const mfsCommission = mfsTxs.data.reduce((sum, tx) => sum + (tx.commissionCents || 0), 0);
+      const flexiCommission = flexiTxs.data.reduce((sum, tx) => sum + (tx.commissionCents || 0), 0);
+
+      return {
+        bkashBalance,
+        nagadBalance,
+        rocketBalance,
+        upayBalance,
+        totalCommissions: (mfsCommission + flexiCommission) / 100,
+        totalMFSTransactionsCount: mfsTxs.data.length,
+        totalFlexiloadRechargesCount: flexiTxs.data.length,
+      };
     },
   });
 }
 
-/**
- * Hook to record MFS transaction
- */
 export function useRecordMFSTransactionMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (input: MfsTransactionInput): Promise<MfsTransaction> => {
-      try {
-        return await apiClient.post<MfsTransaction>('/mobile-services/mfs', input);
-      } catch (error) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        
-        const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 16);
-        const transactionId = input.transactionId || `TXM${Math.floor(Math.random() * 10000000)}`;
-
-        const newTx: MfsTransaction = {
-          id: `mfs-${Date.now()}`,
-          provider: input.provider,
-          type: input.type,
-          mobileNumber: input.mobileNumber,
-          amount: input.amount,
-          fee: input.fee,
-          commission: input.commission,
-          transactionId,
-          notes: input.notes,
-          timestamp,
-          status: 'success',
-        };
-
-        // Update mock local DB
-        MOCK_MFS_TRANSACTIONS.unshift(newTx);
-        
-        // Adjust agent balances and commission totals
-        if (input.provider === 'bkash') {
-          MOCK_SUMMARY.bkashBalance += input.type === 'cash_out' ? input.amount : -input.amount;
-        } else if (input.provider === 'nagad') {
-          MOCK_SUMMARY.nagadBalance += input.type === 'cash_out' ? input.amount : -input.amount;
-        } else if (input.provider === 'rocket') {
-          MOCK_SUMMARY.rocketBalance += input.type === 'cash_out' ? input.amount : -input.amount;
-        } else if (input.provider === 'upay') {
-          MOCK_SUMMARY.upayBalance += input.type === 'cash_out' ? input.amount : -input.amount;
-        }
-
-        MOCK_SUMMARY.totalCommissions += input.commission;
-        MOCK_SUMMARY.totalMFSTransactionsCount += 1;
-
-        return newTx;
+      const accounts = await ensureMfsAccounts();
+      const providerUpper = input.provider.toUpperCase();
+      const account = accounts.find((a) => a.provider === providerUpper);
+      if (!account) {
+        throw new Error(`MFS account for ${input.provider} not found`);
       }
+
+      const res = await mfs.createMfsTransaction({
+        mfsAccountId: account.id,
+        type: input.type.toUpperCase() as any,
+        customerPhone: input.mobileNumber,
+        amountCents: Math.round(input.amount * 100),
+        feeCents: Math.round(input.fee * 100),
+        commissionCents: Math.round(input.commission * 100),
+        txid: input.transactionId || undefined,
+        status: 'COMPLETED',
+        notes: input.notes || undefined,
+      });
+
+      return mapBackendMfsToFrontend(res);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mobile-services'] });
@@ -169,48 +228,31 @@ export function useRecordMFSTransactionMutation() {
   });
 }
 
-/**
- * Hook to record Flexiload recharge
- */
 export function useRecordFlexiloadTransactionMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (input: FlexiloadTransactionInput): Promise<FlexiloadTransaction> => {
-      try {
-        return await apiClient.post<FlexiloadTransaction>('/mobile-services/flexiload', input);
-      } catch (error) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 16);
-        const transactionId = `TXF${Math.floor(Math.random() * 1000000)}`;
-        
-        // standard agent commission rate (typically 2.8% or ৳২৮ per ৳১০০০)
-        const commissionRate = 0.028;
-        const commission = Math.round(input.amount * commissionRate * 100) / 100;
-
-        const newTx: FlexiloadTransaction = {
-          id: `fl-${Date.now()}`,
-          operator: input.operator,
-          connectionType: input.connectionType,
-          mobileNumber: input.mobileNumber,
-          amount: input.amount,
-          commission,
-          transactionId,
-          notes: input.notes,
-          timestamp,
-          status: 'success',
-        };
-
-        // Update local mock db
-        MOCK_FLEXILOAD_TRANSACTIONS.unshift(newTx);
-        
-        // Deduct balances (assuming it deducts from default cash/MFS source, for simplicity we just track recharges and commission)
-        MOCK_SUMMARY.totalCommissions += commission;
-        MOCK_SUMMARY.totalFlexiloadRechargesCount += 1;
-
-        return newTx;
+      const accounts = await ensureFlexiloadAccounts();
+      const operatorBackend = mapOperatorToBackend(input.operator);
+      const account = accounts.find((a) => a.operator === operatorBackend);
+      if (!account) {
+        throw new Error(`Flexiload account for ${input.operator} not found`);
       }
+
+      const commissionRate = 0.028;
+      const commissionCents = Math.round(input.amount * commissionRate * 100);
+
+      const res = await flexiload.createFlexiloadRecharge({
+        accountId: account.id,
+        recipientPhone: input.mobileNumber,
+        amountCents: Math.round(input.amount * 100),
+        commissionCents,
+        status: 'COMPLETED',
+        connectionType: input.connectionType.toUpperCase() as any,
+      });
+
+      return mapBackendFlexiloadToFrontend(res);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mobile-services'] });

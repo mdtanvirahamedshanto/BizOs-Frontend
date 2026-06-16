@@ -261,10 +261,8 @@ export function usePOSCheckoutMutation() {
           transactionId: sale.id,
           timestamp: sale.createdAt,
         };
-      } catch {
-        await new Promise((resolve) => setTimeout(resolve, 400));
-        const products = cartItems.map((c) => c.product);
-        return buildCheckoutResult(input, products);
+      } catch (err) {
+        throw err;
       }
     },
     onSuccess: (result) => {

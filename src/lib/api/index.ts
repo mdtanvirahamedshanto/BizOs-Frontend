@@ -41,6 +41,7 @@ export * as reports from './modules/reports.api';
 export * as telegram from './modules/telegram.api';
 export * as audit from './modules/audit.api';
 export * as uploads from './modules/uploads.api';
+export * as users from './modules/users.api';
 
 // ─── Module Types (named re-exports for convenience) ─────────────────────────
 
@@ -241,3 +242,9 @@ export type {
   UploadedFile,
   UploadContext,
 } from './modules/uploads.api';
+
+// Users
+export type {
+  User,
+  Role,
+} from './modules/users.api';

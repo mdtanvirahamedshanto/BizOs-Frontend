@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ShieldAlert, ArrowLeft, Menu, X } from 'lucide-react';
 import { useUiStore } from '@/stores/use-ui';
+import { useAuthStore } from '@/stores/use-auth';
 import { AdminSidebar, AdminView } from '@/features/admin/components/admin-sidebar';
 import { AdminOverview } from '@/features/admin/components/admin-overview';
 import { TenantManager } from '@/features/admin/components/tenant-manager';
@@ -13,9 +15,30 @@ import { MonitoringManager } from '@/features/admin/components/monitoring-manage
 import { FlagsManager } from '@/features/admin/components/flags-manager';
 
 export default function AdminPage() {
+  const { user, isAuthenticated, isLoading } = useAuthStore();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (!isAuthenticated) {
+        router.replace('/login');
+      } else if ((user?.role as string) !== 'SuperAdmin' && !user?.permissions.includes('*')) {
+        router.replace('/dashboard');
+      }
+    }
+  }, [isLoading, isAuthenticated, user, router]);
+
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
   const [currentView, setCurrentView] = useState<AdminView>('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  if (isLoading || !isAuthenticated || ((user?.role as string) !== 'SuperAdmin' && !user?.permissions.includes('*'))) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white font-bold text-xs">
+        <span>Redirecting / Loading...</span>
+      </div>
+    );
+  }
 
   const renderActiveView = () => {
     switch (currentView) {

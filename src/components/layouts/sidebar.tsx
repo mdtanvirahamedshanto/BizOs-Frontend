@@ -19,7 +19,8 @@ import {
   MapPin,
   ChevronsUpDown,
   Smartphone,
-  Send
+  Send,
+  Wallet
 } from 'lucide-react';
 import { useUiStore } from '@/stores/use-ui';
 import { useTenantStore } from '@/stores/use-tenant';
@@ -76,22 +77,32 @@ const NAVIGATION_ITEMS: NavItem[] = [
     permission: 'expenses:read',
   },
   {
+    name: 'Cashbook',
+    banglaName: 'ক্যাশবুক হিসাব',
+    href: '/dashboard/cashbook',
+    icon: Wallet,
+    permission: 'cashbook:read',
+  },
+  {
     name: 'Mobile Services',
     banglaName: 'মোবাইল সার্ভিস',
     href: '/dashboard/mobile-services',
     icon: Smartphone,
+    permission: 'mfs:read',
   },
   {
     name: 'Telegram',
     banglaName: 'টেলিগ্রাম বট',
     href: '/dashboard/telegram',
     icon: Send,
+    permission: 'telegram:read',
   },
   {
     name: 'Customers',
     banglaName: 'গ্রাহক তালিকা',
     href: '/dashboard/customers',
     icon: Users,
+    permission: 'customers:read',
   },
   {
     name: 'Reports',
