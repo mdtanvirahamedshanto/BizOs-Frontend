@@ -22,10 +22,7 @@ import {
   CheckCircle2,
   Calendar,
   Loader2,
-  AlertCircle,
-  HelpCircle,
   FileText,
-  Calculator,
   ArrowUpRight,
   ArrowDownLeft,
   X,
@@ -38,7 +35,7 @@ export default function CashbookPage() {
   const [showClosingModal, setShowClosingModal] = useState(false);
 
   // Pagination & Queries
-  const { cursor, reset, next, prev, hasPrev } = useCursorPagination();
+  const { cursor, next, prev, hasPrev } = useCursorPagination();
   const { data: balance, isLoading: isBalanceLoading } = useCashbookBalanceQuery();
   const { data: entriesEnvelope, isLoading: isEntriesLoading, refetch: refetchEntries } =
     useCashbookEntriesQuery({ cursor, limit: 15 });
@@ -88,8 +85,9 @@ export default function CashbookPage() {
       setInDesc('');
       setInRef('');
       refetchEntries();
-    } catch (err: any) {
-      alert(err.message || 'ক্যাশ-ইন রেকর্ড করতে সমস্যা হয়েছে।');
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'ক্যাশ-ইন রেকর্ড করতে সমস্যা হয়েছে।';
+      alert(errMsg);
     }
   };
 
@@ -116,8 +114,9 @@ export default function CashbookPage() {
       setOutDesc('');
       setOutRef('');
       refetchEntries();
-    } catch (err: any) {
-      alert(err.message || 'ক্যাশ-আউট রেকর্ড করতে সমস্যা হয়েছে।');
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'ক্যাশ-আউট রেকর্ড করতে সমস্যা হয়েছে।';
+      alert(errMsg);
     }
   };
 
@@ -139,8 +138,9 @@ export default function CashbookPage() {
       setClosingNotes('');
       refetchEntries();
       refetchClosings();
-    } catch (err: any) {
-      alert(err.message || 'দিনের হিসাব বন্ধ করতে সমস্যা হয়েছে।');
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'দিনের হিসাব বন্ধ করতে সমস্যা হয়েছে।';
+      alert(errMsg);
     }
   };
 
