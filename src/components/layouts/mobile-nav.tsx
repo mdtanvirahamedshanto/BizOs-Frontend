@@ -22,9 +22,9 @@ import { usePermissions } from '@/hooks/use-permissions';
 export function MobileNav() {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const { currentBusiness } = useTenantStore((state) => ({
-    currentBusiness: state.businesses.find(b => b.id === state.activeBusinessId)
-  }));
+  const currentBusiness = useTenantStore((state) =>
+    state.businesses.find((b) => b.id === state.activeBusinessId),
+  );
   const { hasPermission, role } = usePermissions();
 
   const handleLinkClick = () => {

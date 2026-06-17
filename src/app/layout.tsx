@@ -38,7 +38,7 @@ export default function RootLayout({
       lang="bn"
       className={`${inter.variable} ${hindSiliguri.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans">
+      <body suppressHydrationWarning className="min-h-full flex flex-col font-sans">
         <Providers>{children}</Providers>
       </body>
     </html>
