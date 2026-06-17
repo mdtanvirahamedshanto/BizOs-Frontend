@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Hind_Siliguri } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
@@ -26,6 +26,14 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "BizOS",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+  themeColor: "#7c3aed",
 };
 
 export default function RootLayout({

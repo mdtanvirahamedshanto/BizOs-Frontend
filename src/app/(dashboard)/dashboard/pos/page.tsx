@@ -7,6 +7,7 @@ import { PosCheckout } from '@/features/pos/components/pos-checkout';
 import { PosReceipt } from '@/features/pos/components/pos-receipt';
 import { CheckoutResult } from '@/features/pos/api/pos-api';
 import { PosReturns } from '@/features/pos/components/pos-returns';
+import { PosMobileCart } from '@/features/pos/components/pos-mobile-cart';
 
 export default function PosPage() {
   const [activeReceipt, setActiveReceipt] = useState<CheckoutResult | null>(null);
@@ -66,16 +67,19 @@ export default function PosPage() {
       {activeTab === 'checkout' ? (
         /* Grid split checkout layout */
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Side: Product catalogue */}
+          {/* Left Side: Product catalogue (full width on mobile) */}
           <div className="lg:col-span-7 xl:col-span-8 h-full">
             <PosCatalog />
           </div>
 
-          {/* Right Side: cart & checkout adjustments */}
-          <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-6 h-full">
+          {/* Right Side: cart & checkout — desktop/tablet only */}
+          <div className="hidden lg:col-span-5 xl:col-span-4 lg:flex flex-col gap-6 h-full">
             <PosCart />
             <PosCheckout onCheckoutSuccess={(receipt) => setActiveReceipt(receipt)} />
           </div>
+
+          {/* Mobile: floating cart bar + checkout sheet */}
+          <PosMobileCart onCheckoutSuccess={(receipt) => setActiveReceipt(receipt)} />
         </div>
       ) : (
         <PosReturns />

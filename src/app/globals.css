@@ -105,6 +105,39 @@ body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ─── Mobile safe-area (notch / home indicator) utilities ─────────────────── */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.bottom-safe {
+  bottom: env(safe-area-inset-bottom, 0px);
+}
+/* Bottom tab bar height including the device safe area */
+.h-mobile-nav {
+  height: calc(4rem + env(safe-area-inset-bottom, 0px));
+}
+/* Padding used on scroll containers so content clears the fixed bottom nav */
+.pb-mobile-nav {
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+}
+/* Offset for elements that float just above the bottom tab bar */
+.bottom-mobile-nav {
+  bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Hide scrollbars on horizontally scrolling mobile rails */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 @media print {

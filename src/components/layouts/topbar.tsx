@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
-  Menu, 
   Search, 
   Bell, 
   User, 
@@ -41,7 +41,6 @@ function getDisplayName(user: { name?: string; email?: string } | null | undefin
 export function Topbar() {
   const router = useRouter();
   const pathname = usePathname();
-  const toggleSidebar = useUiStore((state) => state.toggleSidebar);
   const { theme, setTheme } = useUiStore();
   const isOffline = useOffline();
   const { user, role } = usePermissions();
@@ -83,16 +82,18 @@ export function Topbar() {
   const pathSegments = (pathname ?? '').split('/').filter(Boolean);
   
   return (
-    <header className="sticky top-0 z-10 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white px-4 shadow-sm">
-      {/* Left side: toggle + breadcrumbs */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={toggleSidebar}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 md:hidden"
-          aria-label="Toggle Sidebar Mobile"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
+    <header className="sticky top-0 z-10 flex h-16 min-h-16 w-full items-center justify-between border-b border-slate-200 bg-white px-4 shadow-sm pt-safe">
+      {/* Left side: brand (mobile) + breadcrumbs (desktop) */}
+      <div className="flex items-center gap-3 min-w-0">
+        {/* Mobile brand */}
+        <Link href="/dashboard" className="flex items-center gap-2 md:hidden">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white font-bold shadow-sm">
+            B
+          </div>
+          <span className="font-bold text-lg tracking-tight text-slate-800">
+            Biz<span className="text-primary">OS</span>
+          </span>
+        </Link>
 
         {/* Dynamic Breadcrumbs */}
         <nav className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-slate-500">
@@ -117,8 +118,8 @@ export function Topbar() {
         </nav>
       </div>
 
-      {/* Center: Global Search Bar */}
-      <div className="relative max-w-md w-40 sm:w-60 md:w-80 lg:w-96 mx-4">
+      {/* Center: Global Search Bar (hidden on mobile — lists have their own search) */}
+      <div className="relative hidden sm:block max-w-md sm:w-60 md:w-80 lg:w-96 mx-4">
         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
           <Search className="h-4 w-4 text-slate-400" />
         </div>

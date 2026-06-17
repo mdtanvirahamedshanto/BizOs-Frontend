@@ -22,7 +22,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
         <div
           className={`flex-1 flex flex-col transition-all duration-300 ${
             sidebarOpen ? 'md:pl-64' : 'md:pl-16'
-          } pb-16 md:pb-0`}
+          } pb-mobile-nav md:pb-0`}
         >
           <Topbar />
           <main className="flex-1 p-4 md:p-6 overflow-y-auto">
