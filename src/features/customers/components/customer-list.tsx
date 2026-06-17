@@ -129,7 +129,57 @@ export function CustomerList({ onSelectCustomer, selectedCustomerId }: CustomerL
           <p className="text-xs text-slate-400 font-bold">কোনো গ্রাহকের হিসাব খুঁজে পাওয়া যায়নি।</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <>
+        {/* Mobile card list */}
+        <div className="md:hidden space-y-2.5">
+          {customers.map((c) => {
+            const isSelected = c.id === selectedCustomerId;
+            return (
+              <div
+                key={c.id}
+                onClick={() => onSelectCustomer(c.id)}
+                className={`rounded-xl border p-3 transition-colors ${
+                  isSelected ? 'border-primary bg-primary/5' : 'border-slate-100 bg-white'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-bold text-slate-800 text-sm leading-tight">{c.name}</p>
+                    <span className="mt-1 flex items-center gap-1 text-[11px] text-slate-500 font-semibold">
+                      <Phone className="h-3 w-3 shrink-0 text-slate-400" />
+                      {c.phone || '—'}
+                    </span>
+                    {c.address && (
+                      <p className="mt-0.5 text-[10px] text-slate-400 font-medium truncate">
+                        {c.address}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[9px] text-slate-400 font-bold uppercase leading-none">বকেয়া</p>
+                    <p
+                      className={`mt-1 font-extrabold font-mono text-sm leading-none ${
+                        c.dueAmount > 0 ? 'text-red-600' : 'text-slate-500'
+                      }`}
+                    >
+                      {formatTaka(c.dueAmount)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-2.5 flex justify-end border-t border-slate-50 pt-2.5">
+                  <span className="flex items-center gap-1 text-[11px] font-extrabold text-primary">
+                    হিসাব দেখুন
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full border-collapse text-left text-xs">
             <thead>
               <tr className="border-b border-slate-100 text-slate-400 font-semibold uppercase">
@@ -185,6 +235,7 @@ export function CustomerList({ onSelectCustomer, selectedCustomerId }: CustomerL
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       <CursorPagination

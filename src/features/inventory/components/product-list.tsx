@@ -12,17 +12,18 @@ import { ProductForm } from './product-form';
 import { AdjustmentForm } from './adjustment-form';
 import { useCursorPagination } from '@/lib/crm/pagination';
 import { CursorPagination } from '@/components/ui/cursor-pagination';
+import { BarcodeScanner } from '@/components/ui/barcode-scanner';
 import { 
   Search, 
   Plus, 
   Edit, 
-  Settings2, 
   ArrowLeftRight, 
   FolderDown,
   Boxes,
   Barcode,
   History,
-  Loader2
+  Loader2,
+  ScanLine
 } from 'lucide-react';
 
 interface ProductListProps {
@@ -41,6 +42,7 @@ export function ProductList({ onSelectProduct, selectedProductId }: ProductListP
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [adjustingProduct, setAdjustingProduct] = useState<Product | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -134,7 +136,8 @@ export function ProductList({ onSelectProduct, selectedProductId }: ProductListP
 
       {/* Search & Filters */}
       <div className="flex flex-col md:flex-row md:items-center gap-3">
-        {/* Search */}
+        {/* Search + camera scan */}
+        <div className="flex items-center gap-2 flex-1">
         <div className="relative flex-1">
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
             <Search className="h-4 w-4 text-slate-400" />
@@ -146,6 +149,16 @@ export function ProductList({ onSelectProduct, selectedProductId }: ProductListP
             onChange={(e) => setSearch(e.target.value)}
             className="h-10 w-full rounded-lg border border-slate-200 pl-9 pr-3 text-xs bg-slate-50 focus:bg-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-slate-400"
           />
+        </div>
+          <button
+            type="button"
+            onClick={() => setScannerOpen(true)}
+            className="flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 transition-all hover:border-primary hover:text-primary active:scale-[0.97]"
+            title="Scan barcode with camera"
+          >
+            <ScanLine className="h-4 w-4" />
+            <span className="hidden sm:inline">স্ক্যান</span>
+          </button>
         </div>
 
         {/* Brand filter */}
@@ -203,7 +216,91 @@ export function ProductList({ onSelectProduct, selectedProductId }: ProductListP
           <p className="text-xs text-slate-400 font-bold">কোনো প্রোডাক্টের স্টক পাওয়া যায়নি।</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <>
+        {/* Mobile card list */}
+        <div className="md:hidden space-y-2.5">
+          {products.map((p) => {
+            const isSelected = p.id === selectedProductId;
+            const isLowStock = p.stockCount <= p.lowStockThreshold;
+            return (
+              <div
+                key={p.id}
+                onClick={() => onSelectProduct(p.id)}
+                className={`rounded-xl border p-3 transition-colors ${
+                  isSelected ? 'border-primary bg-primary/5' : 'border-slate-100 bg-white'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-bold text-slate-800 text-sm leading-tight">{p.name}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-slate-400 font-bold leading-none">
+                      {p.sku && <span>SKU: {p.sku}</span>}
+                      {p.barcode && (
+                        <span className="flex items-center gap-0.5">
+                          <Barcode className="h-3 w-3 shrink-0" />
+                          {p.barcode}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded px-2 py-0.5 text-xs font-extrabold font-sans leading-none ${
+                      isLowStock
+                        ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                        : 'bg-slate-100 text-slate-700'
+                    }`}
+                  >
+                    {p.stockCount} {p.unit}
+                  </span>
+                </div>
+
+                <div className="mt-2.5 flex items-center justify-between border-t border-slate-50 pt-2.5">
+                  <div className="flex items-center gap-3 text-[11px] font-semibold text-slate-400">
+                    <span>
+                      ক্রয়: <span className="text-slate-600">{formatTaka(p.costPrice)}</span>
+                    </span>
+                    <span>
+                      বিক্রয়: <span className="text-slate-800 font-extrabold">{formatTaka(p.price)}</span>
+                    </span>
+                  </div>
+                  <div
+                    className="flex items-center gap-1.5"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      onClick={() => setAdjustingProduct(p)}
+                      className="h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-primary hover:border-primary flex items-center justify-center transition-all"
+                      title="স্টক সমন্বয়"
+                    >
+                      <ArrowLeftRight className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setEditingProduct(p)}
+                      className="h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all"
+                      title="এডিট"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => onSelectProduct(p.id)}
+                      className={`h-8 w-8 rounded-lg border flex items-center justify-center transition-all ${
+                        isSelected
+                          ? 'bg-primary border-primary text-white'
+                          : 'border-slate-200 bg-white text-slate-500 hover:text-slate-800'
+                      }`}
+                      title="স্টক লেজার"
+                    >
+                      <History className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full border-collapse text-left text-xs">
             <thead>
               <tr className="border-b border-slate-100 text-slate-400 font-semibold uppercase">
@@ -292,6 +389,7 @@ export function ProductList({ onSelectProduct, selectedProductId }: ProductListP
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {/* Pagination footer */}
@@ -302,6 +400,17 @@ export function ProductList({ onSelectProduct, selectedProductId }: ProductListP
         onNext={() => next(meta?.nextCursor)}
         currentCount={products?.length ?? 0}
         itemLabel="প্রোডাক্ট"
+      />
+
+      {/* Camera barcode scanner → fills the search box */}
+      <BarcodeScanner
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onDetected={(code) => {
+          setSearch(code);
+          setScannerOpen(false);
+        }}
+        title="প্রোডাক্ট খুঁজুন — বারকোড স্ক্যান"
       />
     </div>
   );
