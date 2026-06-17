@@ -1,4 +1,5 @@
 import { useTenantStore } from '@/stores/use-tenant';
+import { getAuthCookie, AUTH_COOKIES } from '@/lib/auth/cookies';
 
 export interface ApiError extends Error {
   status?: number;
@@ -11,7 +12,7 @@ interface RequestOptions extends RequestInit {
   retryCount?: number;
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.bizos.com/v1';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const MAX_RETRIES = 3;
 const RETRY_DELAY_BASE = 1000; // 1 second base
 
@@ -59,10 +60,14 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     }
   }
 
-  // Get authentication token (retrieved from cookies or localStorage)
-  // For production, JWTs are ideally kept in secure cookies, which are auto-sent by the browser.
-  // If stored in localStorage or store, inject it here:
-  // headers.set('Authorization', `Bearer ${token}`);
+  // Attach the bearer token so admin/platform calls are authenticated.
+  // Matches the axios client's token store (cookie-backed).
+  if (typeof window !== 'undefined' && !headers.has('Authorization')) {
+    const token = getAuthCookie(AUTH_COOKIES.accessToken);
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+  }
 
   const config: RequestInit = {
     ...init,

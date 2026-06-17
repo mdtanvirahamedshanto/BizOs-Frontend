@@ -13,6 +13,10 @@ import { registerBackgroundSync } from '@/lib/offline/sync-engine';
 import { useOffline } from '@/hooks/use-offline';
 import { MOCK_PRODUCTS } from './pos-mocks';
 
+/** Demo fallbacks must never appear in production (would let cashiers sell
+ * non-existent items / show fake customers). Dev/preview only. */
+const ALLOW_MOCK_FALLBACK = process.env.NODE_ENV === 'development';
+
 export interface CheckoutResultItem {
   name: string;
   quantity: number;
@@ -87,6 +91,10 @@ export function usePOSProductsQuery(search = '') {
     const fromApi = pages.flatMap((page) => page.data.map(toProductView));
     if (fromApi.length > 0) return fromApi;
 
+    // A successful-but-empty catalog is a valid state (new shop): show nothing
+    // rather than fake inventory. Mocks are dev-only convenience.
+    if (!ALLOW_MOCK_FALLBACK) return [];
+
     if (search) {
       const s = search.toLowerCase();
       return MOCK_PRODUCTS.filter(
@@ -117,7 +125,11 @@ export function usePOSCustomersQuery(search = '') {
         const res = await customersApi.listCustomers({ search: search || undefined, limit: 50 });
         const { toCustomerView } = await import('@/lib/crm/mappers');
         return res.data.map((c) => toCustomerView(c, 0));
-      } catch {
+      } catch (err) {
+        // In production, surface the error to the UI instead of masking it
+        // with fake customers.
+        if (!ALLOW_MOCK_FALLBACK) throw err;
+
         await new Promise((resolve) => setTimeout(resolve, 100));
 
         const fallback: Customer[] = [

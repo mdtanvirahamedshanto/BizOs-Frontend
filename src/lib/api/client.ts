@@ -20,7 +20,7 @@ import {
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
 
 const DEFAULT_TIMEOUT = 15_000; // 15 s
 

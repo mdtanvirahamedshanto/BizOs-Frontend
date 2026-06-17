@@ -35,6 +35,7 @@ export function FlexiloadLedger() {
 
   const watchedAmount = useWatch({ control, name: 'amount' });
   const watchedOperator = useWatch({ control, name: 'operator' });
+  const watchedConnectionType = useWatch({ control, name: 'connectionType' });
 
   // Standard commission in Bangladesh: typically 2.8% (28 Taka per 1000 Taka)
   const commissionRate = 0.028;
@@ -204,7 +205,7 @@ export function FlexiloadLedger() {
                   type="button"
                   onClick={() => setValue('connectionType', conn as any)}
                   className={`h-8 rounded-lg border text-[10px] font-bold transition-all flex items-center justify-center cursor-pointer ${
-                    useWatch({ control, name: 'connectionType' }) === conn
+                    watchedConnectionType === conn
                       ? 'bg-primary/10 border-primary text-primary'
                       : 'bg-white border-slate-200 text-slate-650 hover:bg-slate-50'
                   }`}

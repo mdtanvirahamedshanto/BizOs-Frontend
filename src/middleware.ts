@@ -13,9 +13,13 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/reset-password');
 
   const isDashboardRoute = pathname.startsWith('/dashboard');
+  const isAdminRoute = pathname.startsWith('/admin');
 
-  // 1. Guard dashboard routes: Redirect to login if token is missing
-  if (isDashboardRoute && !token) {
+  // 1. Guard dashboard + admin routes: Redirect to login if token is missing.
+  // NOTE: the platform-admin *role* check is enforced server-side by the
+  // backend `requirePlatformAdmin` guard on /api/v1/platform/*; this middleware
+  // only blocks unauthenticated access to the admin shell.
+  if ((isDashboardRoute || isAdminRoute) && !token) {
     const loginUrl = new URL('/login', request.url);
     // Optional: preserve the original path for post-login redirect
     loginUrl.searchParams.set('redirect', pathname);
@@ -35,6 +39,7 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/dashboard/:path*',
+    '/admin/:path*',
     '/login',
     '/register',
     '/otp-verify',
