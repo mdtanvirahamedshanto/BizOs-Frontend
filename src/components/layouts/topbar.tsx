@@ -33,6 +33,11 @@ const PATH_TRANSLATIONS: Record<string, string> = {
   settings: 'সেটিংস',
 };
 
+function getDisplayName(user: { name?: string; email?: string } | null | undefined): string {
+  const label = user?.name?.trim() || user?.email?.split('@')[0] || 'ইউজার';
+  return label.split(' ')[0] ?? 'ইউজার';
+}
+
 export function Topbar() {
   const router = useRouter();
   const pathname = usePathname();
@@ -75,7 +80,7 @@ export function Topbar() {
   }, []);
 
   // Split and generate dynamic breadcrumbs
-  const pathSegments = pathname.split('/').filter(Boolean);
+  const pathSegments = (pathname ?? '').split('/').filter(Boolean);
   
   return (
     <header className="sticky top-0 z-10 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white px-4 shadow-sm">
@@ -226,7 +231,7 @@ export function Topbar() {
               <User className="h-4 w-4" />
             </div>
             <span className="hidden md:inline text-xs font-semibold max-w-[100px] truncate">
-              {user ? user.name.split(' ')[0] : 'ইউজার'}
+              {getDisplayName(user)}
             </span>
           </button>
 
@@ -234,7 +239,7 @@ export function Topbar() {
           {profileOpen && (
             <div className="absolute right-0 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-2 shadow-xl animate-in fade-in-50 slide-in-from-top-5">
               <div className="border-b border-slate-100 px-3 py-2.5 mb-1">
-                <p className="text-sm font-semibold text-slate-800 truncate">{user?.name}</p>
+                <p className="text-sm font-semibold text-slate-800 truncate">{getDisplayName(user)}</p>
                 <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
                 <div className="mt-1.5 flex items-center gap-1 text-[10px] font-semibold text-primary">
                   <Shield className="h-3 w-3" />

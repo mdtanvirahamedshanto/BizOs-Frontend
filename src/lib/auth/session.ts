@@ -9,14 +9,18 @@ import { useAuthStore, type UserInfo } from '@/stores/use-auth';
 import { useTenantStore } from '@/stores/use-tenant';
 import { deriveRoleFromPermissions } from './permissions';
 
-export function authUserToUserInfo(user: AuthUser): UserInfo {
+export function authUserToUserInfo(user: AuthUser, fallback?: UserInfo | null): UserInfo {
+  const permissions = user.permissions?.length
+    ? user.permissions
+    : (fallback?.permissions ?? []);
+
   return {
     id: user.id,
-    name: user.name,
+    name: user.name?.trim() || fallback?.name || user.email.split('@')[0] || 'ইউজার',
     email: user.email,
     shopId: user.shopId,
-    permissions: user.permissions,
-    role: deriveRoleFromPermissions(user.permissions),
+    permissions,
+    role: deriveRoleFromPermissions(permissions),
   };
 }
 
@@ -45,7 +49,8 @@ export function establishSession(result: AuthResult): UserInfo {
 
 /** Update cached user profile after /auth/me refresh. */
 export function syncUserProfile(user: AuthUser): UserInfo {
-  const userInfo = authUserToUserInfo(user);
+  const existing = useAuthStore.getState().user;
+  const userInfo = authUserToUserInfo(user, existing);
   useAuthStore.getState().setUser(userInfo);
   return userInfo;
 }
