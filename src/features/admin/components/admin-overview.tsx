@@ -239,12 +239,12 @@ export function AdminOverview({ onNavigate }: AdminOverviewProps) {
             </button>
 
             <button
-              onClick={() => onNavigate('monitoring')}
+              onClick={() => onNavigate('system')}
               className="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-100 hover:border-indigo-100 bg-slate-50 hover:bg-indigo-50/30 text-center transition-all group"
             >
               <Activity className="h-5 w-5 text-indigo-600 group-hover:scale-110 transition-transform mb-1.5" />
-              <span className="text-xs font-semibold text-slate-700">সার্ভার স্ট্যাটাস</span>
-              <span className="text-[8px] text-slate-400">Monitoring</span>
+              <span className="text-xs font-semibold text-slate-700">সিস্টেম স্ট্যাটাস</span>
+              <span className="text-[8px] text-slate-400">System Status</span>
             </button>
 
             <button

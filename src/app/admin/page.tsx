@@ -11,7 +11,8 @@ import { AdminOverview } from '@/features/admin/components/admin-overview';
 import { TenantManager } from '@/features/admin/components/tenant-manager';
 import { SubscriptionManager } from '@/features/admin/components/subscription-manager';
 import { TicketManager } from '@/features/admin/components/ticket-manager';
-import { MonitoringManager } from '@/features/admin/components/monitoring-manager';
+import { SystemManager } from '@/features/admin/components/system-manager';
+import { BackupManager } from '@/features/admin/components/backup-manager';
 import { FlagsManager } from '@/features/admin/components/flags-manager';
 
 export default function AdminPage() {
@@ -50,8 +51,10 @@ export default function AdminPage() {
         return <SubscriptionManager />;
       case 'tickets':
         return <TicketManager />;
-      case 'monitoring':
-        return <MonitoringManager />;
+      case 'system':
+        return <SystemManager />;
+      case 'backups':
+        return <BackupManager />;
       case 'flags':
         return <FlagsManager />;
       default:
@@ -65,7 +68,8 @@ export default function AdminPage() {
       case 'tenants': return 'মার্চেন্ট';
       case 'subscriptions': return 'প্ল্যান';
       case 'tickets': return 'সাপোর্ট ডেস্ক';
-      case 'monitoring': return 'মনিটরিং';
+      case 'system': return 'সিস্টেম স্ট্যাটাস';
+      case 'backups': return 'ডাটাবেস ব্যাকআপ';
       case 'flags': return 'ফিচার ফ্ল্যাগ';
       default: return 'সুপার এডমিন';
     }
@@ -109,7 +113,8 @@ export default function AdminPage() {
             { id: 'tenants', label: 'মার্চেন্ট টেন্যান্টস', name: 'Tenants' },
             { id: 'subscriptions', label: 'প্ল্যান ও প্রাইসিং', name: 'Subscriptions' },
             { id: 'tickets', label: 'সাপোর্ট টিকিট ডেস্ক', name: 'Support Tickets' },
-            { id: 'monitoring', label: 'সার্ভার মনিটরিং', name: 'System Monitoring' },
+            { id: 'system', label: 'সিস্টেম স্ট্যাটাস ও ব্যবহার', name: 'System Status' },
+            { id: 'backups', label: 'ডাটাবেস ব্যাকআপ', name: 'Database Backup' },
             { id: 'flags', label: 'ফিচার ফ্ল্যাগস', name: 'Feature Flags' },
           ].map((item) => (
             <button

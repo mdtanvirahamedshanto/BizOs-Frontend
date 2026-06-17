@@ -20,7 +20,8 @@ import {
   ChevronsUpDown,
   Smartphone,
   Send,
-  Wallet
+  Wallet,
+  ShieldAlert
 } from 'lucide-react';
 import { useUiStore } from '@/stores/use-ui';
 import { useTenantStore } from '@/stores/use-tenant';
@@ -228,6 +229,26 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {/* Platform super-admin entry (owners only) */}
+      {role === 'Owner' && (
+        <div className="px-3 pt-2">
+          <Link
+            href="/admin"
+            className="flex items-center gap-3 rounded-lg border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-sm font-semibold text-indigo-700 transition-all hover:bg-indigo-100"
+          >
+            <ShieldAlert className="h-5 w-5 shrink-0" />
+            {sidebarOpen && (
+              <div className="flex flex-col text-left">
+                <span className="font-semibold">সুপার এডমিন</span>
+                <span className="text-[10px] font-normal leading-none text-indigo-400">
+                  Platform Admin
+                </span>
+              </div>
+            )}
+          </Link>
+        </div>
+      )}
 
       {/* Sidebar Footer User Role Badge */}
       <div className="p-4 border-t border-slate-100 bg-slate-50/50">

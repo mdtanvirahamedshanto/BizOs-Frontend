@@ -42,6 +42,7 @@ export * as telegram from './modules/telegram.api';
 export * as audit from './modules/audit.api';
 export * as uploads from './modules/uploads.api';
 export * as users from './modules/users.api';
+export * as platform from './modules/platform.api';
 
 // ─── Module Types (named re-exports for convenience) ─────────────────────────
 
@@ -248,3 +249,12 @@ export type {
   User,
   Role,
 } from './modules/users.api';
+
+// Platform (super-admin)
+export type {
+  PlatformHealth,
+  PlatformStats,
+  ServiceProbe,
+  BackupFileInfo,
+  BackupCreateResult,
+} from './modules/platform.api';

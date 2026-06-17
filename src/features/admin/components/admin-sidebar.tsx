@@ -8,6 +8,7 @@ import {
   CreditCard,
   MessageSquare,
   Activity,
+  Database,
   ToggleLeft,
   ArrowLeft,
   ChevronLeft,
@@ -21,7 +22,8 @@ export type AdminView =
   | 'tenants'
   | 'subscriptions'
   | 'tickets'
-  | 'monitoring'
+  | 'system'
+  | 'backups'
   | 'flags';
 
 interface AdminSidebarProps {
@@ -62,10 +64,16 @@ const ADMIN_NAVIGATION_ITEMS: AdminNavItem[] = [
     icon: MessageSquare,
   },
   {
-    id: 'monitoring',
-    name: 'System Monitoring',
-    banglaName: 'সার্ভার মনিটরিং',
+    id: 'system',
+    name: 'System Status & Usage',
+    banglaName: 'সিস্টেম স্ট্যাটাস',
     icon: Activity,
+  },
+  {
+    id: 'backups',
+    name: 'Database Backup',
+    banglaName: 'ডাটাবেস ব্যাকআপ',
+    icon: Database,
   },
   {
     id: 'flags',
