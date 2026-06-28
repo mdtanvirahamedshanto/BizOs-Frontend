@@ -62,28 +62,8 @@ async function syncCustomersToIndexedDb(): Promise<number> {
 }
 
 export async function syncReferenceDataToIndexedDb(): Promise<{ products: number; customers: number }> {
-  if (!db || !navigator.onLine) {
-    return { products: 0, customers: 0 };
-  }
-
-  try {
-    const [productCount, customerCount] = await Promise.all([
-      syncProductsToIndexedDb(),
-      syncCustomersToIndexedDb(),
-    ]);
-
-    await db.syncMeta.put({
-      key: 'referenceData',
-      lastSyncedAt: Date.now(),
-      productCount,
-      customerCount,
-    });
-
-    return { products: productCount, customers: customerCount };
-  } catch (error) {
-    console.warn('[OfflineCache] Reference data sync skipped:', error);
-    return { products: 0, customers: 0 };
-  }
+  // Offline support is temporarily skipped per request
+  return { products: 0, customers: 0 };
 }
 
 export async function getOfflineProducts(search = ''): Promise<LocalProduct[]> {
