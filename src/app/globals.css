@@ -141,16 +141,21 @@ body {
 }
 
 @media print {
-  aside, header, nav, button, input, select, .print-hidden {
-    display: none !important;
+  body * {
+    visibility: hidden;
   }
-  main, .mx-auto, .max-w-7xl, #thermal-receipt-print-area {
-    padding: 0 !important;
+  #thermal-receipt-print-area, #thermal-receipt-print-area * {
+    visibility: visible;
+  }
+  #thermal-receipt-print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
     margin: 0 !important;
-    max-width: 100% !important;
-    width: 100% !important;
-    box-shadow: none !important;
+    padding: 0 !important;
     border: none !important;
+    box-shadow: none !important;
   }
   body {
     background-color: white !important;

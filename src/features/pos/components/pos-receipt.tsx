@@ -4,6 +4,8 @@ import React from 'react';
 import { CheckoutResult } from '../api/pos-api';
 import { formatTaka } from '@/features/dashboard/components/kpi-cards';
 import { Printer, RefreshCcw, Landmark } from 'lucide-react';
+import { useAuthStore } from '@/stores/use-auth';
+import { useShopQuery } from '@/hooks/queries/use-shop-query';
 
 interface PosReceiptProps {
   receipt: CheckoutResult;
@@ -11,6 +13,9 @@ interface PosReceiptProps {
 }
 
 export function PosReceipt({ receipt, onReset }: PosReceiptProps) {
+  const shopId = useAuthStore((state) => state.user?.shopId);
+  const { data: shop } = useShopQuery(shopId || '');
+
   const handlePrint = () => {
     if (typeof window !== 'undefined') {
       window.print();
@@ -26,9 +31,15 @@ export function PosReceipt({ receipt, onReset }: PosReceiptProps) {
       >
         {/* Header */}
         <div className="text-center border-b border-dashed border-slate-300 pb-2.5">
-          <h2 className="text-sm font-bold uppercase">শরীফ জেনারেল স্টোর</h2>
-          <p className="text-[10px] text-slate-500 font-bold">মিরপুর ১০, ঢাকা, বাংলাদেশ</p>
-          <p className="text-[9px] text-slate-400 font-semibold mt-1">মোবাইল: ০১৭১২৩৪৫৬৭৮</p>
+          <h2 className="text-sm font-bold uppercase">{shop?.name || 'শরীফ জেনারেল স্টোর'}</h2>
+          <p className="text-[10px] text-slate-500 font-bold">
+            {shop?.address
+              ? [shop.address.street, shop.address.city, shop.address.state]
+                  .filter(Boolean)
+                  .join(', ') || 'মিরপুর ১০, ঢাকা, বাংলাদেশ'
+              : 'মিরপুর ১০, ঢাকা, বাংলাদেশ'}
+          </p>
+          <p className="text-[9px] text-slate-400 font-semibold mt-1">মোবাইল: {shop?.phone || '০১৭১২৩৪৫৬৭৮'}</p>
         </div>
 
         {/* Invoice Meta */}
