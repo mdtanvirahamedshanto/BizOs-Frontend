@@ -18,6 +18,7 @@ interface PosCartState {
   addToCart: (product: Product) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
+  updatePrice: (productId: string, price: number) => void;
   setDiscount: (discount: number) => void;
   setTaxRate: (taxRate: number) => void;
   setCustomerId: (customerId: string | null) => void;
@@ -72,6 +73,18 @@ export const usePosCartStore = create<PosCartState>()((set) => ({
           // Bound by 1 and max stock limits
           const boundedQty = Math.max(1, Math.min(quantity, item.product.stockCount));
           return { ...item, quantity: boundedQty };
+        }
+        return item;
+      });
+      return { cartItems: nextCart };
+    });
+  },
+
+  updatePrice: (productId, price) => {
+    set((state) => {
+      const nextCart = state.cartItems.map((item) => {
+        if (item.product.id === productId) {
+          return { ...item, product: { ...item.product, price: Math.max(0, price) } };
         }
         return item;
       });

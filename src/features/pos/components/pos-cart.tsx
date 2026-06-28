@@ -6,7 +6,7 @@ import { formatTaka } from '@/features/dashboard/components/kpi-cards';
 import { Minus, Plus, Trash2, ShoppingCart } from 'lucide-react';
 
 export function PosCart() {
-  const { cartItems, updateQuantity, removeFromCart, clearCart } = usePosCartStore();
+  const { cartItems, updateQuantity, updatePrice, removeFromCart, clearCart } = usePosCartStore();
 
   const totalAmount = cartItems.reduce(
     (sum, item) => sum + item.product.price * item.quantity,
@@ -44,28 +44,55 @@ export function PosCart() {
           cartItems.map((item) => (
             <div 
               key={item.product.id} 
-              className="p-3 border border-slate-100 rounded-xl bg-slate-50/50 flex items-center justify-between gap-3 text-xs"
+              className="p-3 border border-slate-100 rounded-xl bg-slate-50/50 flex flex-col gap-2"
             >
-              <div className="min-w-0 flex-1">
-                <p className="font-bold text-slate-800 truncate leading-none mb-1">
-                  {item.product.name}
-                </p>
-                <p className="text-[10px] text-slate-400 font-bold leading-none">
-                  একক মূল্য: {formatTaka(item.product.price)}
-                </p>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-slate-800 text-xs truncate leading-none mb-2">
+                    {item.product.name}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-slate-500 font-bold">মূল্য: ৳</span>
+                    <input
+                      type="number"
+                      value={item.product.price === 0 ? '' : item.product.price}
+                      onChange={(e) => updatePrice(item.product.id, Number(e.target.value) || 0)}
+                      className="w-16 h-6 px-1 text-[11px] font-bold border border-slate-200 rounded text-slate-800 outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+
+                {/* Price total & Remove */}
+                <div className="text-right shrink-0 flex items-start gap-2">
+                  <div className="min-w-[60px] pt-0.5">
+                    <p className="font-black text-slate-800 text-[13px] font-sans">
+                      {formatTaka(item.product.price * item.quantity)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => removeFromCart(item.product.id)}
+                    className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded mt-0.5"
+                    title="Remove item"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Quantity Controls */}
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex items-center gap-1 shrink-0 mt-1">
                 <button
                   onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
                   className="h-7 w-7 border border-slate-200 rounded bg-white hover:bg-slate-50 flex items-center justify-center text-slate-500 font-extrabold active:scale-95"
                 >
                   <Minus className="h-3.5 w-3.5" />
                 </button>
-                <span className="w-8 text-center font-extrabold text-slate-800 font-sans">
-                  {item.quantity}
-                </span>
+                <input
+                  type="number"
+                  value={item.quantity === 0 ? '' : item.quantity}
+                  onChange={(e) => updateQuantity(item.product.id, Number(e.target.value) || 0)}
+                  className="w-12 h-7 text-center font-extrabold text-slate-800 font-sans border border-slate-200 rounded outline-none focus:border-primary"
+                />
                 <button
                   onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
                   disabled={item.quantity >= item.product.stockCount}
@@ -73,22 +100,7 @@ export function PosCart() {
                 >
                   <Plus className="h-3.5 w-3.5" />
                 </button>
-              </div>
-
-              {/* Price total & Remove */}
-              <div className="text-right shrink-0 flex items-center gap-2">
-                <div className="min-w-[50px]">
-                  <p className="font-black text-slate-800 text-[13px] font-sans">
-                    {formatTaka(item.product.price * item.quantity)}
-                  </p>
-                </div>
-                <button
-                  onClick={() => removeFromCart(item.product.id)}
-                  className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
-                  title="Remove item"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <span className="text-[10px] text-slate-400 font-bold ml-2">/ {item.product.stockCount} {item.product.unit}</span>
               </div>
             </div>
           ))
