@@ -237,7 +237,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Exports & Print button actions */}
-          <ReportsExport activeSection={activeSection} data={getActiveDataArray()} />
+          <ReportsExport activeSection={activeSection as 'profit' | 'expense' | 'inventory' | 'dues'} data={getActiveDataArray()} />
         </div>
 
         {/* Reports Tables Component */}
@@ -246,7 +246,7 @@ export default function ReportsPage() {
             <SalesHistoryTable timeframe={timeframe} />
           ) : (
             <ReportsTables
-              activeSection={activeSection}
+              activeSection={activeSection as 'profit' | 'expense' | 'inventory' | 'dues'}
               profitRows={data.profitRows}
               expenseRows={data.expenseRows}
               inventoryRows={data.inventoryRows}
