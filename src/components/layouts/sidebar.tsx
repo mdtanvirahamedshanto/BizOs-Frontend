@@ -230,8 +230,8 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Platform super-admin entry (owners only) */}
-      {role === 'Owner' && (
+      {/* Platform super-admin entry */}
+      {role === 'SuperAdmin' && (
         <div className="px-3 pt-2">
           <Link
             href="/admin"
@@ -259,7 +259,7 @@ export function Sidebar() {
             </div>
             <div className="min-w-0">
               <p className="text-xs font-semibold text-slate-700 leading-none mb-1 truncate">
-                {role === 'Owner' ? 'মালিক' : role === 'Manager' ? 'ম্যানেজার' : 'ক্যাশিয়ার'}
+                {role === 'SuperAdmin' ? 'সুপার এডমিন' : role === 'Owner' ? 'মালিক' : role === 'Manager' ? 'ম্যানেজার' : 'ক্যাশিয়ার'}
               </p>
               <span className="inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-800">
                 Online

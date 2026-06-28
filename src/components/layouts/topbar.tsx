@@ -244,7 +244,7 @@ export function Topbar() {
                 <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
                 <div className="mt-1.5 flex items-center gap-1 text-[10px] font-semibold text-primary">
                   <Shield className="h-3 w-3" />
-                  <span>{role === 'Owner' ? 'মালিক একাউন্ট' : role === 'Manager' ? 'ম্যানেজার' : 'ক্যাশিয়ার'}</span>
+                  <span>{role === 'SuperAdmin' ? 'সুপার এডমিন' : role === 'Owner' ? 'মালিক একাউন্ট' : role === 'Manager' ? 'ম্যানেজার' : 'ক্যাশিয়ার'}</span>
                 </div>
               </div>
 
