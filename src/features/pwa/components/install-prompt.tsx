@@ -12,11 +12,15 @@ export function InstallPrompt() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    const isDismissed = localStorage.getItem('pwa_prompt_dismissed') === 'true';
+
     const handleBeforeInstallPrompt = (e: Event) => {
       // Prevent default browser installation banner
       e.preventDefault();
       setInstallPromptEvent(e);
-      setIsVisible(true);
+      if (!isDismissed) {
+        setIsVisible(true);
+      }
     };
 
     const handleAppInstalled = () => {
@@ -49,6 +53,11 @@ export function InstallPrompt() {
     setIsVisible(false);
   };
 
+  const handleDismiss = () => {
+    localStorage.setItem('pwa_prompt_dismissed', 'true');
+    setIsVisible(false);
+  };
+
   if (!isVisible || !installPromptEvent) return null;
 
   return (
@@ -61,7 +70,7 @@ export function InstallPrompt() {
         <div className="flex justify-between items-start">
           <h4 className="text-xs font-bold text-white">BizOS অ্যাপ ইনস্টল করুন</h4>
           <button 
-            onClick={() => setIsVisible(false)}
+            onClick={handleDismiss}
             className="p-0.5 rounded-full hover:bg-slate-800 text-slate-400"
           >
             <X className="h-4 w-4" />
