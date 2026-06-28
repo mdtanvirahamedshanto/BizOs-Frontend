@@ -106,12 +106,12 @@ export function backendDashboardToView(payload: BackendDashboardPayload): Dashbo
     todaySales: centsToTaka(kpis.revenue.current),
     totalDue: 0,
     totalExpenses: centsToTaka(kpis.expenses.current),
-    netProfit: centsToTaka(kpis.netProfit.current),
+    netProfit: centsToTaka(kpis.grossProfit.current),
     inventoryValue: 0,
     salesGrowthPercentage: kpis.revenue.changePercent,
     dueGrowthPercentage: 0,
     expensesGrowthPercentage: kpis.expenses.changePercent,
-    profitGrowthPercentage: kpis.netProfit.changePercent,
+    profitGrowthPercentage: kpis.grossProfit.changePercent,
     inventoryGrowthPercentage: 0,
   };
 

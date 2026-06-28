@@ -12,6 +12,7 @@ import { DashboardMetrics } from '../api/dashboard-api';
 
 interface KpiCardsProps {
   metrics: DashboardMetrics;
+  timeframe?: 'today' | 'seven_days' | 'month';
 }
 
 /**
@@ -28,11 +29,34 @@ export function formatTaka(amount: number): string {
   return `৳${formattedEn}`;
 }
 
-export function KpiCards({ metrics }: KpiCardsProps) {
+export function KpiCards({ metrics, timeframe = 'today' }: KpiCardsProps) {
+  const getLabel = (type: 'sales' | 'expenses' | 'profit') => {
+    switch (timeframe) {
+      case 'seven_days':
+        return {
+          sales: { bn: '৭ দিনের বিক্রি', en: '7 Days Sales' },
+          expenses: { bn: 'মোট খরচ', en: 'Total Expenses' },
+          profit: { bn: '৭ দিনের লাভ', en: '7 Days Profit' }
+        }[type];
+      case 'month':
+        return {
+          sales: { bn: 'চলতি মাসের বিক্রি', en: 'This Month\'s Sales' },
+          expenses: { bn: 'মোট খরচ', en: 'Total Expenses' },
+          profit: { bn: 'চলতি মাসের লাভ', en: 'This Month\'s Profit' }
+        }[type];
+      default:
+        return {
+          sales: { bn: 'আজকের বিক্রি', en: 'Today\'s Sales' },
+          expenses: { bn: 'মোট খরচ', en: 'Total Expenses' },
+          profit: { bn: 'আজকের লাভ', en: 'Today\'s Profit' }
+        }[type];
+    }
+  };
+
   const cards = [
     {
-      title: 'আজকের বিক্রি',
-      sub: 'Today\'s Sales',
+      title: getLabel('sales').bn,
+      sub: getLabel('sales').en,
       value: formatTaka(metrics.todaySales),
       growth: metrics.salesGrowthPercentage,
       icon: ShoppingBag,
@@ -47,16 +71,16 @@ export function KpiCards({ metrics }: KpiCardsProps) {
       color: 'text-red-600 bg-red-50 border-red-100',
     },
     {
-      title: 'আজকের খরচ',
-      sub: 'Today\'s Expenses',
+      title: getLabel('expenses').bn,
+      sub: getLabel('expenses').en,
       value: formatTaka(metrics.totalExpenses),
       growth: metrics.expensesGrowthPercentage,
       icon: BookOpen,
       color: 'text-amber-600 bg-amber-50 border-amber-100',
     },
     {
-      title: 'নিট লাভ',
-      sub: 'Net Profit',
+      title: getLabel('profit').bn,
+      sub: getLabel('profit').en,
       value: formatTaka(metrics.netProfit),
       growth: metrics.profitGrowthPercentage,
       icon: PiggyBank,

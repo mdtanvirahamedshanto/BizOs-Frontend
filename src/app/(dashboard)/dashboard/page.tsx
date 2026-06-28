@@ -133,7 +133,7 @@ export default function DashboardPage() {
       </div>
 
       {/* KPI Cards Widget */}
-      <KpiCards metrics={data.metrics} />
+      <KpiCards metrics={data.metrics} timeframe={timeframe} />
 
       {/* Dashboard split grid layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
