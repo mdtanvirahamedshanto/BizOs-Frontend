@@ -3,7 +3,7 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { User, Phone, MapPin, FileText, Landmark, Loader2 } from 'lucide-react';
+import { User, Phone, MapPin, FileText, Landmark, Users, Loader2 } from 'lucide-react';
 import { customerSchema, CustomerInput } from '../types';
 import { useCreateCustomerMutation, useUpdateCustomerMutation, Customer } from '../api/customers-api';
 
@@ -32,6 +32,7 @@ export function CustomerForm({ customer, onSuccess, onCancel }: CustomerFormProp
       phone: customer?.phone || '',
       address: customer?.address || '',
       notes: customer?.notes || '',
+      guardianName: (customer as any)?.guardianName || '',
       initialDue: customer?.dueAmount || 0,
     },
   });
@@ -122,6 +123,25 @@ export function CustomerForm({ customer, onSuccess, onCancel }: CustomerFormProp
             type="text"
             placeholder="যেমন: হাউজ নং ১২, রোড নং ৩, সেক্টর ৪, ঢাকা"
             {...register('address')}
+            className="h-10 w-full rounded-lg border pl-9 pr-3 text-xs border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+          />
+        </div>
+      </div>
+
+      {/* Guardian / Wali */}
+      <div>
+        <label htmlFor="customer-guardian" className="block text-xs font-semibold text-slate-700 mb-1">
+          অলী / অভিভাবকের নাম
+        </label>
+        <div className="relative">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+            <Users className="h-4 w-4 text-slate-400" />
+          </div>
+          <input
+            id="customer-guardian"
+            type="text"
+            placeholder="যেমন: মোঃ রহিম (পিতা / স্বামী)"
+            {...register('guardianName')}
             className="h-10 w-full rounded-lg border pl-9 pr-3 text-xs border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
           />
         </div>

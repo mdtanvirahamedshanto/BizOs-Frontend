@@ -78,13 +78,28 @@ export function PurchaseForm({ onSuccess, onCancel }: PurchaseFormProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">সরবরাহকারী</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-xs font-semibold text-slate-700">সরবরাহকারী</label>
+            <a
+              href="/dashboard/ledger"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] text-primary font-bold hover:underline flex items-center gap-0.5"
+            >
+              + নতুন মহাজন যোগ করুন
+            </a>
+          </div>
           <select {...register('supplierId')} className="h-10 w-full rounded-lg border border-slate-200 px-3 text-xs">
             <option value="">নির্বাচন করুন (ঐচ্ছিক)</option>
             {suppliers?.map((s) => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </select>
+          {(!suppliers || suppliers.length === 0) && (
+            <p className="text-[10px] text-slate-400 mt-1 font-medium">
+              লেজার → মহাজন খাতা থেকে নতুন মহাজন যোগ করুন
+            </p>
+          )}
         </div>
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">স্ট্যাটাস *</label>

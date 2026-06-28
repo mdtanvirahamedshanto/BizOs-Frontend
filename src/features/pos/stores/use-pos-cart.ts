@@ -8,8 +8,8 @@ export interface CartItem {
 
 interface PosCartState {
   cartItems: CartItem[];
-  discount: number; // percentage or fixed cash discount
-  taxRate: number; // percentage VAT
+  discount: number;
+  taxRate: number;
   customerId: string | null;
   paymentType: 'cash' | 'due' | 'partial' | 'mobile_banking';
   cashReceived: number;
@@ -30,7 +30,7 @@ interface PosCartState {
 export const usePosCartStore = create<PosCartState>()((set) => ({
   cartItems: [],
   discount: 0,
-  taxRate: 5, // Default 5% VAT in Bangladesh
+  taxRate: 0,
   customerId: null,
   paymentType: 'cash',
   cashReceived: 0,
@@ -38,10 +38,9 @@ export const usePosCartStore = create<PosCartState>()((set) => ({
   addToCart: (product) => {
     set((state) => {
       const existingIdx = state.cartItems.findIndex((item) => item.product.id === product.id);
-      
+
       let nextCart = [...state.cartItems];
       if (existingIdx > -1) {
-        // Increment quantity by 1 if stock limit permits
         const currentQty = nextCart[existingIdx].quantity;
         if (currentQty < product.stockCount) {
           nextCart[existingIdx] = {
@@ -50,7 +49,6 @@ export const usePosCartStore = create<PosCartState>()((set) => ({
           };
         }
       } else {
-        // Add to cart only if stock is available
         if (product.stockCount > 0) {
           nextCart.push({ product, quantity: 1 });
         }
@@ -70,7 +68,6 @@ export const usePosCartStore = create<PosCartState>()((set) => ({
     set((state) => {
       const nextCart = state.cartItems.map((item) => {
         if (item.product.id === productId) {
-          // Bound by 1 and max stock limits
           const boundedQty = Math.max(1, Math.min(quantity, item.product.stockCount));
           return { ...item, quantity: boundedQty };
         }
@@ -93,26 +90,25 @@ export const usePosCartStore = create<PosCartState>()((set) => ({
   },
 
   setDiscount: (discount) => set({ discount: Math.max(0, discount) }),
-  
+
   setTaxRate: (taxRate) => set({ taxRate: Math.max(0, taxRate) }),
-  
+
   setCustomerId: (customerId) => set({ customerId }),
-  
+
   setPaymentType: (paymentType) => {
     set((state) => {
-      // Auto-set cash received if changing payment type to cash
       const newState: Partial<PosCartState> = { paymentType };
       return newState;
     });
   },
-  
+
   setCashReceived: (cashReceived) => set({ cashReceived: Math.max(0, cashReceived) }),
 
   clearCart: () =>
     set({
       cartItems: [],
       discount: 0,
-      taxRate: 5,
+      taxRate: 0,
       customerId: null,
       paymentType: 'cash',
       cashReceived: 0,

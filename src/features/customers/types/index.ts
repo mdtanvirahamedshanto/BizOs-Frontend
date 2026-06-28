@@ -20,6 +20,9 @@ export const customerSchema = z.object({
   notes: z
     .string()
     .optional(),
+  guardianName: z
+    .string()
+    .optional(),
 });
 
 export const ledgerEntrySchema = z.object({

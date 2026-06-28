@@ -8,7 +8,8 @@ import { QuickActions } from '@/features/dashboard/components/quick-actions';
 import { TopProducts } from '@/features/dashboard/components/top-products';
 import { RecentTransactions } from '@/features/dashboard/components/recent-transactions';
 import { InsightsFeed } from '@/features/dashboard/components/insights-feed';
-import { Loader2, Calendar, RefreshCw } from 'lucide-react';
+import { SalesHistoryTable } from '@/features/reports/components/sales-history';
+import { Loader2, RefreshCw } from 'lucide-react';
 
 export default function DashboardPage() {
   const [timeframe, setTimeframe] = useState<'today' | 'seven_days' | 'month'>('today');
@@ -142,6 +143,21 @@ export default function DashboardPage() {
           <SalesChart data={data.chartData} />
           
           <RecentTransactions transactions={data.recentTransactions} />
+
+          {/* Sales History — filtered by selected timeframe */}
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs">
+            <div className="border-b border-slate-100 pb-3 mb-4">
+              <h3 className="text-sm font-bold text-slate-800">বিক্রয় ইতিহাস (Sales History)</h3>
+              <p className="text-[10px] text-slate-400 font-medium mt-0.5">কোন বিক্রয়তে কে কে পণ্য কিনেছে তার বিস্তারিত</p>
+            </div>
+            <SalesHistoryTable
+              timeframe={
+                timeframe === 'today' ? 'today' :
+                timeframe === 'seven_days' ? 'weekly' :
+                'monthly'
+              }
+            />
+          </div>
         </div>
 
         {/* Right Side elements: Shortcuts, Top Products, Tips */}

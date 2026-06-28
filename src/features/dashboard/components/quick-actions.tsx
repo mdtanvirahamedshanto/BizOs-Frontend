@@ -4,7 +4,8 @@ import {
   ShoppingBag, 
   PlusCircle, 
   UserPlus, 
-  FilePlus 
+  FilePlus,
+  Truck
 } from 'lucide-react';
 
 export function QuickActions() {
@@ -36,6 +37,13 @@ export function QuickActions() {
       href: '/dashboard/expenses',
       icon: FilePlus,
       color: 'bg-amber-600 text-white hover:bg-amber-700',
+    },
+    {
+      label: 'মহাজন / সরবরাহকারী',
+      sub: 'Suppliers & Payables',
+      href: '/dashboard/ledger',
+      icon: Truck,
+      color: 'bg-indigo-600 text-white hover:bg-indigo-700',
     },
   ];
 
