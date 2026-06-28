@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { AUTH_COOKIES, deleteAuthCookie, getAuthCookie, setAuthCookie } from '@/lib/auth/cookies';
 
-export type UserRole = 'Owner' | 'Manager' | 'Cashier';
+export type UserRole = 'SuperAdmin' | 'Owner' | 'Manager' | 'Cashier';
 
 export interface UserInfo {
   id: string;

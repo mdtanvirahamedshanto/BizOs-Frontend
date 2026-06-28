@@ -59,8 +59,12 @@ export function OtpForm() {
     verifyOtp(
       { phone, code: data.code, shopId: localShopId },
       {
-        onSuccess: () => {
-          router.push('/dashboard');
+        onSuccess: (result) => {
+          if (result.user.role === 'SuperAdmin') {
+            router.push('/admin');
+          } else {
+            router.push('/dashboard');
+          }
         },
       },
     );

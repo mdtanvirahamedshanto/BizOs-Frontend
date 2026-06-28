@@ -31,8 +31,12 @@ export function LoginForm() {
 
   const onSubmit = (data: LoginInput) => {
     loginUser(data, {
-      onSuccess: () => {
-        router.push(redirectTo);
+      onSuccess: (result) => {
+        if (result.user.role === 'SuperAdmin' && !searchParams.get('redirect')) {
+          router.push('/admin');
+        } else {
+          router.push(redirectTo);
+        }
       },
     });
   };

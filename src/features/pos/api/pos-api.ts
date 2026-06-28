@@ -11,11 +11,7 @@ import { db } from '@/lib/db';
 import { usePwaStore } from '@/features/pwa/stores/use-pwa-store';
 import { registerBackgroundSync } from '@/lib/offline/sync-engine';
 import { useOffline } from '@/hooks/use-offline';
-import { MOCK_PRODUCTS } from './pos-mocks';
 
-/** Demo fallbacks must never appear in production (would let cashiers sell
- * non-existent items / show fake customers). Dev/preview only. */
-const ALLOW_MOCK_FALLBACK = process.env.NODE_ENV === 'development';
 
 export interface CheckoutResultItem {
   name: string;
@@ -89,23 +85,8 @@ export function usePOSProductsQuery(search = '') {
 
     const pages = query.data?.pages ?? [];
     const fromApi = pages.flatMap((page) => page.data.map(toProductView));
-    if (fromApi.length > 0) return fromApi;
-
-    // A successful-but-empty catalog is a valid state (new shop): show nothing
-    // rather than fake inventory. Mocks are dev-only convenience.
-    if (!ALLOW_MOCK_FALLBACK) return [];
-
-    if (search) {
-      const s = search.toLowerCase();
-      return MOCK_PRODUCTS.filter(
-        (p) =>
-          p.name.toLowerCase().includes(s) ||
-          p.barcode?.includes(s) ||
-          p.sku?.toLowerCase().includes(s),
-      );
-    }
-    return MOCK_PRODUCTS;
-  }, [isOffline, offlineQuery.data, query.data, search]);
+    return fromApi;
+  }, [isOffline, offlineQuery.data, query.data]);
 
   return {
     ...(isOffline ? offlineQuery : query),
@@ -128,42 +109,7 @@ export function usePOSCustomersQuery(search = '') {
         const { toCustomerView } = await import('@/lib/crm/mappers');
         return res.data.map((c) => toCustomerView(c, 0));
       } catch (err) {
-        // In production, surface the error to the UI instead of masking it
-        // with fake customers.
-        if (!ALLOW_MOCK_FALLBACK) throw err;
-
-        await new Promise((resolve) => setTimeout(resolve, 100));
-
-        const fallback: Customer[] = [
-          {
-            id: 'cust-1',
-            name: 'মোঃ আব্দুর রহমান (Rahman)',
-            phone: '01711223344',
-            address: 'মিরপুর ঢাকা',
-            dueAmount: 5200,
-            dueCents: 520000,
-            notes: 'বিশ্বস্ত কাস্টমার',
-            createdAt: '2026-01-10',
-          },
-          {
-            id: 'cust-2',
-            name: 'আবুল কালাম (Kalam)',
-            phone: '01819876543',
-            address: 'উত্তরা ঢাকা',
-            dueAmount: 12000,
-            dueCents: 1200000,
-            notes: 'পাইকারি ক্রেতা',
-            createdAt: '2026-02-15',
-          },
-        ];
-
-        if (search) {
-          const s = search.toLowerCase();
-          return fallback.filter(
-            (c) => c.name.toLowerCase().includes(s) || c.phone.includes(s),
-          );
-        }
-        return fallback;
+        throw err;
       }
     },
     enabled: !isOffline,

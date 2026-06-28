@@ -20,7 +20,7 @@ export function authUserToUserInfo(user: AuthUser, fallback?: UserInfo | null): 
     email: user.email,
     shopId: user.shopId,
     permissions,
-    role: deriveRoleFromPermissions(permissions),
+    role: (user.role as any) || deriveRoleFromPermissions(permissions),
   };
 }
 

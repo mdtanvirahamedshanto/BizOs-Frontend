@@ -11,6 +11,7 @@ import {
   useProductsQuery as useProductsQueryBase,
   useProductQuery as useProductQueryBase,
   useCategoriesQuery as useCategoriesQueryBase,
+  useCreateCategoryMutation as useCreateCategoryMutationBase,
   useProductBrandsQuery,
   useProductUnitsQuery,
   useCreateProductMutation as useCreateProductMutationBase,
@@ -117,6 +118,15 @@ export function useInventoryLedgerQuery(productId: string | null) {
     isLoading: movementsQuery.isLoading || productQuery.isLoading,
     data: ledger,
   };
+}
+
+export function useCreateCategoryMutation() {
+  const base = useCreateCategoryMutationBase();
+
+  return useMutation({
+    mutationFn: (input: { name: string; description?: string }) =>
+      base.mutateAsync(input),
+  });
 }
 
 export function useCreateProductMutation() {

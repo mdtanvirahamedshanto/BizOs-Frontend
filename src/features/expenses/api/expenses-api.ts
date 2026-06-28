@@ -13,6 +13,7 @@ import {
   useRecurringExpensesQuery,
   useCreateRecurringExpenseMutation as useCreateRecurringExpenseMutationBase,
   useProcessRecurringExpensesMutation,
+  useCreateExpenseCategoryMutation as useCreateExpenseCategoryMutationBase,
 } from '@/hooks/queries/use-expense-query';
 import {
   toExpenseView,
@@ -91,3 +92,10 @@ export function useCreateRecurringExpenseMutation() {
 }
 
 export { useProcessRecurringExpensesMutation };
+
+export function useCreateExpenseCategoryMutation() {
+  const base = useCreateExpenseCategoryMutationBase();
+  return useMutation({
+    mutationFn: (input: { name: string; description?: string }) => base.mutateAsync(input),
+  });
+}
