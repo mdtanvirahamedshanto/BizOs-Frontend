@@ -1,14 +1,43 @@
 'use client';
 
-import React from 'react';
-import { CreditCard, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
-import { useAdminPlansQuery } from '../api/admin-api';
+import React, { useState } from 'react';
+import { CreditCard, CheckCircle2, AlertCircle, Sparkles, Edit2, X } from 'lucide-react';
+import { useAdminPlansQuery, useUpdatePlanMutation } from '../api/admin-api';
+import { SubscriptionPlan } from '../types';
 
 export function SubscriptionManager() {
   const { data: plans, isLoading } = useAdminPlansQuery();
+  const updatePlanMutation = useUpdatePlanMutation();
+
+  const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
+  const [editPriceMonthly, setEditPriceMonthly] = useState<number>(0);
+  const [editPriceYearly, setEditPriceYearly] = useState<number>(0);
+
+  const handleEditClick = (plan: SubscriptionPlan) => {
+    setEditingPlan(plan);
+    setEditPriceMonthly(plan.priceMonthly);
+    setEditPriceYearly(plan.priceYearly);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingPlan) return;
+    try {
+      await updatePlanMutation.mutateAsync({
+        id: editingPlan.id,
+        payload: {
+          priceMonthly: editPriceMonthly,
+          priceYearly: editPriceYearly,
+        }
+      });
+      setEditingPlan(null);
+    } catch (error) {
+      console.error(error);
+      alert('আপডেট করতে ব্যর্থ হয়েছে।');
+    }
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
       {/* Header */}
       <div>
         <h2 className="text-xl font-bold text-slate-800">সাবস্ক্রিপশন প্ল্যান ও বিলিং সেটিংস (Subscription Plans)</h2>
@@ -91,14 +120,72 @@ export function SubscriptionManager() {
                   </div>
                 </div>
 
-                {/* Footer Action Alert for Admins */}
-                <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center gap-2 text-[10px] text-slate-500 font-medium">
-                  <AlertCircle className="h-4 w-4 text-slate-400 shrink-0" />
-                  <span>প্ল্যান প্রাইস পরিবর্তন করতে ডেভেলপার ডেটাবেস স্কিমা কনফিগার করুন।</span>
+                {/* Footer Action to Edit */}
+                <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[10px] text-slate-500 font-medium flex items-center gap-1.5">
+                    <AlertCircle className="h-3.5 w-3.5 text-slate-400" /> কাস্টমাইজ করুন
+                  </span>
+                  <button
+                    onClick={() => handleEditClick(plan)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors"
+                  >
+                    <Edit2 className="h-3.5 w-3.5" /> এডিট প্রাইস
+                  </button>
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingPlan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100">
+              <h3 className="font-bold text-slate-800 text-sm">প্ল্যান এডিট: {editingPlan.name}</h3>
+              <button onClick={() => setEditingPlan(null)} className="p-1 hover:bg-slate-100 rounded text-slate-400">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            
+            <div className="p-5 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">মাসিক ফি (৳)</label>
+                <input
+                  type="number"
+                  value={editPriceMonthly}
+                  onChange={(e) => setEditPriceMonthly(Number(e.target.value))}
+                  className="w-full h-9 px-3 rounded-lg border border-slate-200 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">বাৎসরিক ফি (৳)</label>
+                <input
+                  type="number"
+                  value={editPriceYearly}
+                  onChange={(e) => setEditPriceYearly(Number(e.target.value))}
+                  className="w-full h-9 px-3 rounded-lg border border-slate-200 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+              <button 
+                onClick={() => setEditingPlan(null)}
+                className="px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-200 transition-colors"
+              >
+                বাতিল
+              </button>
+              <button 
+                onClick={handleSaveEdit}
+                disabled={updatePlanMutation.isPending}
+                className="px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors disabled:opacity-50"
+              >
+                {updatePlanMutation.isPending ? 'সেভ হচ্ছে...' : 'সেভ করুন'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

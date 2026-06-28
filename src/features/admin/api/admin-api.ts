@@ -139,3 +139,20 @@ export function useToggleFlagMutation() {
     },
   });
 }
+
+/**
+ * Hook to edit subscription plans
+ */
+export function useUpdatePlanMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { id: string; payload: Partial<SubscriptionPlan> }): Promise<SubscriptionPlan> => {
+      const res = await apiClient.put<SubscriptionPlan>(`/platform/plans/${data.id}`, data.payload);
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'plans'] });
+    },
+  });
+}

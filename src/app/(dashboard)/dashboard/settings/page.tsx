@@ -6,10 +6,11 @@ import { shop, users } from '@/lib/api';
 import { useTenantStore } from '@/stores/use-tenant';
 import { Loader2, Store, Users, FileText, Plus, Trash2, CheckCircle } from 'lucide-react';
 import { PermissionGuard } from '@/components/auth/auth-provider';
+import { BillingTab } from '@/features/settings/components/billing-tab';
 
 export default function SettingsPage() {
   const businessId = useTenantStore((s) => s.activeBusinessId);
-  const [activeTab, setActiveTab] = useState<'profile' | 'team' | 'receipt'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'team' | 'receipt' | 'subscription'>('profile');
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Shop state form
@@ -201,16 +202,25 @@ export default function SettingsPage() {
               }`}
             >
               <Users className="h-3.5 w-3.5" />
-              <span>টিম অ্যাক্সেস</span>
+              <span>টিম ও অ্যাক্সেস</span>
             </button>
             <button
               onClick={() => setActiveTab('receipt')}
               className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'receipt' ? 'bg-primary text-white' : 'text-slate-655 hover:bg-slate-50'
+                activeTab === 'receipt' ? 'bg-primary text-white' : 'text-slate-650 hover:bg-slate-50'
               }`}
             >
               <FileText className="h-3.5 w-3.5" />
-              <span>ক্যাশ মেমো (Receipt)</span>
+              <span>ক্যাশ মেমো সেটিংস</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('subscription')}
+              className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'subscription' ? 'bg-primary text-white' : 'text-slate-650 hover:bg-slate-50'
+              }`}
+            >
+              <CheckCircle className="h-3.5 w-3.5" />
+              <span>সাবস্ক্রিপশন ও বিলিং</span>
             </button>
           </div>
         </div>
@@ -497,6 +507,10 @@ export default function SettingsPage() {
                 </button>
               </form>
             </div>
+          )}
+
+          {activeTab === 'subscription' && (
+            <BillingTab />
           )}
         </div>
       </div>

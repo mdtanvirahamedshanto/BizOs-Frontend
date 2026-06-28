@@ -1,0 +1,63 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
+
+export interface TenantSubscription {
+  id: string;
+  shopId: string;
+  planId: string;
+  status: 'active' | 'cancelled' | 'expired';
+  startDate: string;
+  endDate: string | null;
+}
+
+export interface BillingOverview {
+  activeSubscription: TenantSubscription | null;
+  currentPlanEnum: string;
+}
+
+/**
+ * Hook to retrieve current subscription status
+ */
+export function useBillingOverviewQuery() {
+  return useQuery({
+    queryKey: ['billing', 'overview'],
+    queryFn: async (): Promise<BillingOverview> => {
+      const res = await apiClient.get<BillingOverview>('/billing/current');
+      return res;
+    },
+  });
+}
+
+/**
+ * Hook to subscribe to a new plan
+ */
+export function useSubscribeMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { planId: string; billingCycle: 'monthly' | 'yearly' }): Promise<TenantSubscription> => {
+      const res = await apiClient.post<TenantSubscription>('/billing/subscribe', data);
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['billing', 'overview'] });
+    },
+  });
+}
+
+/**
+ * Hook to cancel the active subscription
+ */
+export function useCancelSubscriptionMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (): Promise<{ success: boolean }> => {
+      const res = await apiClient.post<{ success: boolean }>('/billing/cancel', {});
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['billing', 'overview'] });
+    },
+  });
+}
