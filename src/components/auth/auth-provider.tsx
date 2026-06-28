@@ -27,7 +27,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     hydrateSession();
   }, [hydrateSession]);
 
-  const { data: me, isError, isFetching } = useMeQuery();
+  const { data: me, error, isError, isFetching } = useMeQuery();
 
   useEffect(() => {
     if (me) {
@@ -37,9 +37,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     if (isError && isAuthenticated) {
-      clearSession();
+      if (error && typeof error === 'object' && 'status' in error && (error as any).status === 401) {
+        clearSession();
+      }
     }
-  }, [isError, isAuthenticated]);
+  }, [isError, isAuthenticated, error]);
 
   // Block render briefly while validating an existing cookie session
   if (isLoading || (isAuthenticated && !me && isFetching)) {
