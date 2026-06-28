@@ -87,7 +87,7 @@ export function PurchaseForm({ onSuccess, onCancel }: PurchaseFormProps) {
           </select>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">স্ট্যাটাস</label>
+          <label className="block text-xs font-semibold text-slate-700 mb-1">স্ট্যাটাস *</label>
           <select {...register('status')} className="h-10 w-full rounded-lg border border-slate-200 px-3 text-xs">
             <option value="RECEIVED">গ্রহণকৃত (স্টক যোগ হবে)</option>
             <option value="ORDERED">অর্ডারকৃত</option>
@@ -99,7 +99,7 @@ export function PurchaseForm({ onSuccess, onCancel }: PurchaseFormProps) {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="text-xs font-semibold text-slate-700 flex items-center gap-1">
-            <Package className="h-4 w-4" /> আইটেম সমূহ
+            <Package className="h-4 w-4" /> আইটেম সমূহ *
           </label>
           <button
             type="button"
@@ -110,9 +110,18 @@ export function PurchaseForm({ onSuccess, onCancel }: PurchaseFormProps) {
           </button>
         </div>
 
+        {/* Item Headers */}
+        <div className="grid grid-cols-12 gap-2 px-2 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider hidden md:grid">
+          <div className="col-span-5">প্রোডাক্ট *</div>
+          <div className="col-span-2">পরিমাণ *</div>
+          <div className="col-span-3">ক্রয় মূল্য *</div>
+          <div className="col-span-2"></div>
+        </div>
+
         {fields.map((field, index) => (
           <div key={field.id} className="grid grid-cols-12 gap-2 items-start p-2 rounded-lg bg-slate-50 border border-slate-100">
             <div className="col-span-12 md:col-span-5">
+              <label className="block text-[10px] font-semibold text-slate-500 mb-1 md:hidden">প্রোডাক্ট *</label>
               <select
                 {...register(`items.${index}.productId`)}
                 className="h-9 w-full rounded-lg border border-slate-200 px-2 text-xs"
@@ -124,6 +133,7 @@ export function PurchaseForm({ onSuccess, onCancel }: PurchaseFormProps) {
               </select>
             </div>
             <div className="col-span-4 md:col-span-2">
+              <label className="block text-[10px] font-semibold text-slate-500 mb-1 md:hidden">পরিমাণ *</label>
               <input
                 type="number"
                 placeholder="পরিমাণ"
@@ -132,6 +142,7 @@ export function PurchaseForm({ onSuccess, onCancel }: PurchaseFormProps) {
               />
             </div>
             <div className="col-span-6 md:col-span-3">
+              <label className="block text-[10px] font-semibold text-slate-500 mb-1 md:hidden">ক্রয় মূল্য *</label>
               <input
                 type="number"
                 placeholder="ক্রয় মূল্য"
@@ -139,7 +150,7 @@ export function PurchaseForm({ onSuccess, onCancel }: PurchaseFormProps) {
                 className="h-9 w-full rounded-lg border border-slate-200 px-2 text-xs"
               />
             </div>
-            <div className="col-span-2 flex justify-end">
+            <div className="col-span-2 flex justify-end items-end h-full">
               {fields.length > 1 && (
                 <button type="button" onClick={() => remove(index)} className="h-9 w-9 text-red-500 hover:bg-red-50 rounded-lg">
                   <Trash2 className="h-4 w-4 mx-auto" />

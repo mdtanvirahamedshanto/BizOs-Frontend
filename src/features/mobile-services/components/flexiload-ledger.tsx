@@ -218,7 +218,7 @@ export function FlexiloadLedger() {
 
           {/* Phone Number */}
           <div className="space-y-1">
-            <label htmlFor="flexiload-phone-input" className="block text-[10px] font-bold text-slate-700">মোবাইল নম্বর *</label>
+            <label htmlFor="flexiload-phone-input" className="block text-[10px] font-bold text-slate-700">মোবাইল নম্বর</label>
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                 <Smartphone className="h-4 w-4 text-slate-400" />

@@ -5,6 +5,7 @@ import { useReportsQuery } from '@/features/reports/api/reports-api';
 import { ReportsChart } from '@/features/reports/components/reports-chart';
 import { ReportsTables } from '@/features/reports/components/reports-tables';
 import { ReportsExport } from '@/features/reports/components/reports-export';
+import { SalesHistoryTable } from '@/features/reports/components/sales-history';
 import { formatTaka } from '@/features/dashboard/components/kpi-cards';
 import { RefreshCw } from 'lucide-react';
 import { ReportTimeframe } from '@/features/reports/types';
@@ -12,7 +13,7 @@ import { PermissionGuard } from '@/components/auth/auth-provider';
 
 export default function ReportsPage() {
   const [timeframe, setTimeframe] = useState<ReportTimeframe>('weekly');
-  const [activeSection, setActiveSection] = useState<'profit' | 'expense' | 'inventory' | 'dues'>('profit');
+  const [activeSection, setActiveSection] = useState<'profit' | 'expense' | 'inventory' | 'dues' | 'sales'>('profit');
 
   const { data, isLoading, error, refetch, isFetching } = useReportsQuery(timeframe);
 
@@ -221,6 +222,18 @@ export default function ReportsPage() {
             >
               বকেয়া খাতা (Dues Ledger)
             </button>
+
+            {/* Sales History Section */}
+            <button
+              onClick={() => setActiveSection('sales')}
+              className={`h-9 px-3 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                activeSection === 'sales'
+                  ? 'bg-primary/10 border-primary text-primary'
+                  : 'bg-white border-slate-200 text-slate-650 hover:bg-slate-50'
+              }`}
+            >
+              বিক্রয় ইতিহাস (Sales History)
+            </button>
           </div>
 
           {/* Exports & Print button actions */}
@@ -229,13 +242,17 @@ export default function ReportsPage() {
 
         {/* Reports Tables Component */}
         <div className="print:pt-4">
-          <ReportsTables
-            activeSection={activeSection}
-            profitRows={data.profitRows}
-            expenseRows={data.expenseRows}
-            inventoryRows={data.inventoryRows}
-            dueRows={data.dueRows}
-          />
+          {activeSection === 'sales' ? (
+            <SalesHistoryTable timeframe={timeframe} />
+          ) : (
+            <ReportsTables
+              activeSection={activeSection}
+              profitRows={data.profitRows}
+              expenseRows={data.expenseRows}
+              inventoryRows={data.inventoryRows}
+              dueRows={data.dueRows}
+            />
+          )}
         </div>
       </div>
     </PermissionGuard>

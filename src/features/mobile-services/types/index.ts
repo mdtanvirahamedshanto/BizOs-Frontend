@@ -26,7 +26,7 @@ export const flexiloadTransactionSchema = z.object({
   }),
   mobileNumber: z.string().regex(/^01[3-9]\d{8}$/, {
     message: 'সঠিক ১১-ডিজিটের মোবাইল নম্বর দিন',
-  }),
+  }).or(z.literal('')),
   amount: z.number({ message: 'পরিমাণ অবশ্যই সংখ্যা হতে হবে' }).positive({ message: 'পরিমাণ অবশ্যই শূন্যের চেয়ে বড় হতে হবে' }),
   notes: z.string().optional(),
 });
