@@ -4,6 +4,9 @@
 
 import { useMemo } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { db } from '@/lib/db';
+import { usePwaStore } from '@/features/pwa/stores/use-pwa-store';
+import { registerBackgroundSync } from '@/lib/offline/sync-engine';
 import {
   useCustomersQuery as useCustomersQueryBase,
   useCustomerQuery as useCustomerQueryBase,
@@ -180,6 +183,26 @@ export function useAddLedgerEntryMutation() {
       input: LedgerEntryInput;
       paymentMode?: string;
     }) => {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+
+      if (isOffline) {
+        if (input.type === 'collect') {
+          if (db) {
+            await db.queueTransaction('ledger_create', {
+              customerId,
+              amountCents: takaToCents(input.amount),
+              method: paymentMode ? toPaymentMethod(paymentMode) : 'CASH',
+              notes: input.description,
+            });
+            usePwaStore.getState().updateOutboxCount();
+            registerBackgroundSync();
+          }
+          throw new Error('Offline mode active');
+        } else {
+          throw new Error('Offline mode does not support giving due adjustments yet.');
+        }
+      }
+
       const accountId = await resolveKhataAccountId('CUSTOMER', customerId);
 
       if (input.type === 'collect') {

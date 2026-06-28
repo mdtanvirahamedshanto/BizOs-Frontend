@@ -117,7 +117,9 @@ export function usePOSProductsQuery(search = '') {
  * Hook to retrieve customers list in POS screen for selectors
  */
 export function usePOSCustomersQuery(search = '') {
-  return useQuery({
+  const isOffline = useOffline();
+
+  const query = useQuery({
     queryKey: ['pos', 'customers', search],
     queryFn: async (): Promise<Customer[]> => {
       try {
@@ -164,7 +166,42 @@ export function usePOSCustomersQuery(search = '') {
         return fallback;
       }
     },
+    enabled: !isOffline,
   });
+
+  const offlineQuery = useQuery({
+    queryKey: ['pos', 'offline-customers', search],
+    queryFn: async () => {
+      const { getOfflineCustomers } = await import('@/lib/offline/cache-sync');
+      return getOfflineCustomers(search);
+    },
+    enabled: isOffline,
+    staleTime: 60_000,
+  });
+
+  const customers = useMemo(() => {
+    if (isOffline) {
+      const cached = offlineQuery.data ?? [];
+      return cached.map(
+        (c): Customer => ({
+          id: c.id,
+          name: c.name,
+          phone: c.phone,
+          address: '',
+          dueAmount: c.dueAmount,
+          dueCents: Math.round(c.dueAmount * 100),
+          notes: '',
+          createdAt: new Date(c.updatedAt).toISOString(),
+        }),
+      );
+    }
+    return query.data ?? [];
+  }, [isOffline, offlineQuery.data, query.data]);
+
+  return {
+    ...(isOffline ? offlineQuery : query),
+    data: customers,
+  };
 }
 
 function buildCheckoutResult(input: CheckoutInput, cartProducts: Product[]): CheckoutResult {

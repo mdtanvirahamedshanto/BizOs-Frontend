@@ -56,12 +56,21 @@ async function processTransaction(txn: OutboxTransaction): Promise<void> {
     }
     case 'ledger_create': {
       const payload = txn.payload as {
-        accountId: string;
+        customerId?: string;
+        accountId?: string;
         amountCents: number;
         method: string;
         notes?: string;
       };
-      await khata.recordCollection(payload.accountId, {
+      
+      let accountId = payload.accountId;
+      if (!accountId && payload.customerId) {
+         const account = await khata.ensureKhataAccount({ partyType: 'CUSTOMER', partyId: payload.customerId });
+         accountId = account.id;
+      }
+      if (!accountId) throw new Error('Missing accountId or customerId for ledger_create');
+
+      await khata.recordCollection(accountId, {
         amountCents: payload.amountCents,
         method: payload.method as 'CASH' | 'BKASH' | 'NAGAD' | 'ROCKET',
         notes: payload.notes,

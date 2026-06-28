@@ -4,6 +4,9 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { db } from '@/lib/db';
+import { usePwaStore } from '@/features/pwa/stores/use-pwa-store';
+import { registerBackgroundSync } from '@/lib/offline/sync-engine';
 import {
   useProductsQuery as useProductsQueryBase,
   useProductQuery as useProductQueryBase,
@@ -143,7 +146,25 @@ export function useAdjustStockMutation() {
   const base = useAdjustStockMutationBase();
 
   return useMutation({
-    mutationFn: ({ productId, input }: { productId: string; input: AdjustmentInput }) =>
-      base.mutateAsync({ productId, data: adjustmentInputToRequest(input) }),
+    mutationFn: async ({ productId, input }: { productId: string; input: AdjustmentInput }) => {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+
+      if (isOffline) {
+        if (db) {
+          const req = adjustmentInputToRequest(input);
+          await db.queueTransaction('stock_adjustment', {
+            productId,
+            quantity: req.quantity,
+            type: req.type,
+            notes: req.notes,
+          });
+          usePwaStore.getState().updateOutboxCount();
+          registerBackgroundSync();
+        }
+        throw new Error('Offline mode active');
+      }
+
+      return base.mutateAsync({ productId, data: adjustmentInputToRequest(input) });
+    },
   });
 }
