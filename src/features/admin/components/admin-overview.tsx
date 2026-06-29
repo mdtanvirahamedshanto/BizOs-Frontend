@@ -73,7 +73,7 @@ export function AdminOverview({ onNavigate }: AdminOverviewProps) {
             <DollarSign className="h-5 w-5 text-indigo-300" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-2xl font-black">${overview?.mrr.toLocaleString()}</h3>
+            <h3 className="text-2xl font-black">${(overview?.mrr || 0).toLocaleString()}</h3>
             <p className="text-[10px] font-bold text-indigo-200">Monthly Recurring Revenue</p>
           </div>
         </div>
@@ -85,7 +85,7 @@ export function AdminOverview({ onNavigate }: AdminOverviewProps) {
             <TrendingUp className="h-5 w-5 text-emerald-600" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-2xl font-bold text-slate-800">${overview?.arr.toLocaleString()}</h3>
+            <h3 className="text-2xl font-bold text-slate-800">${(overview?.arr || 0).toLocaleString()}</h3>
             <p className="text-[10px] font-bold text-slate-500">Annual Recurring Revenue</p>
           </div>
         </div>
@@ -109,7 +109,7 @@ export function AdminOverview({ onNavigate }: AdminOverviewProps) {
             <Users className="h-5 w-5 text-indigo-600" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-2xl font-bold text-slate-800">+{overview?.merchantGrowthRate}%</h3>
+            <h3 className="text-2xl font-bold text-slate-800">+{(overview?.merchantGrowthRate || 0).toFixed(1)}%</h3>
             <p className="text-[10px] font-bold text-slate-500">Monthly Registration Growth</p>
           </div>
         </div>

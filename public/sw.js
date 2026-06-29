@@ -38,8 +38,8 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // Exclude API requests and WebSockets
-  if (url.pathname.includes('/api/') || req.method !== 'GET') {
+  // Exclude API requests, non-GET methods, and non-HTTP schemes (like chrome-extension://)
+  if (url.pathname.includes('/api/') || req.method !== 'GET' || !url.protocol.startsWith('http')) {
     return;
   }
 
