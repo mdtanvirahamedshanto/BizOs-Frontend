@@ -1,4 +1,5 @@
 import { useTenantStore } from '@/stores/use-tenant';
+import { useAuthStore } from '@/stores/use-auth';
 import { getAuthCookie, AUTH_COOKIES } from '@/lib/auth/cookies';
 
 export interface ApiError extends Error {
@@ -79,8 +80,9 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
     // If unauthorized (401), handle token refresh logic here
     if (response.status === 401 && typeof window !== 'undefined') {
-      // In a real application, trigger token refresh token rotation.
-      // If refresh fails, redirect to login page.
+      // For now, immediately logout and redirect to prevent being stuck in a broken state
+      useAuthStore.getState().logout();
+      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
     }
 
     if (!response.ok) {

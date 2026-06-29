@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { queryClient } from '@/lib/query-client';
+import { getQueryClient } from '@/lib/query-client';
 import { AuthProvider } from '@/components/auth/auth-provider';
 import { RealtimeProvider } from '@/components/realtime/realtime-provider';
 import { useSyncManager } from '@/features/pwa/hooks/use-sync-manager';
@@ -32,6 +32,8 @@ function OfflineCacheInitializer() {
 }
 
 export function Providers({ children }: ProvidersProps) {
+  const queryClient = getQueryClient();
+
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       window.addEventListener('load', () => {
