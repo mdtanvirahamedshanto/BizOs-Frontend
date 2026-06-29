@@ -1,0 +1,17 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bizos-frontend
+    restart: unless-stopped
+    ports:
+      - '3001:3000'
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.yourdomain.com}
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
