@@ -23,8 +23,8 @@ export function useBillingOverviewQuery() {
   return useQuery({
     queryKey: ['billing', 'overview'],
     queryFn: async (): Promise<BillingOverview> => {
-      const res = await apiClient.get<BillingOverview>('/billing/current');
-      return res;
+      const res = await apiClient.get<{ success: boolean; data: BillingOverview }>('/billing/current');
+      return res.data;
     },
   });
 }
@@ -37,8 +37,8 @@ export function useSubscribeMutation() {
 
   return useMutation({
     mutationFn: async (data: { planId: string; billingCycle: 'monthly' | 'yearly' }): Promise<TenantSubscription> => {
-      const res = await apiClient.post<TenantSubscription>('/billing/subscribe', data);
-      return res;
+      const res = await apiClient.post<{ success: boolean; data: TenantSubscription }>('/billing/subscribe', data);
+      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['billing', 'overview'] });
@@ -54,8 +54,8 @@ export function useManualSubscribeMutation() {
 
   return useMutation({
     mutationFn: async (data: { planId: string; billingCycle: 'monthly' | 'yearly'; paymentMethod: string; transactionId: string; senderAccount?: string }): Promise<any> => {
-      const res = await apiClient.post<any>('/billing/manual-subscribe', data);
-      return res;
+      const res = await apiClient.post<{ success: boolean; data: any }>('/billing/manual-subscribe', data);
+      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['billing', 'overview'] });
@@ -71,8 +71,8 @@ export function useCancelSubscriptionMutation() {
 
   return useMutation({
     mutationFn: async (): Promise<{ success: boolean }> => {
-      const res = await apiClient.post<{ success: boolean }>('/billing/cancel', {});
-      return res;
+      const res = await apiClient.post<{ success: boolean; data: any }>('/billing/cancel', {});
+      return res; // Already wrapped or maybe just { success: true }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['billing', 'overview'] });
