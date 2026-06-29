@@ -71,11 +71,7 @@ function BrandLogo({ size = 'md' }: { size?: 'sm' | 'md' }) {
 
   return (
     <div className="flex items-center gap-2.5">
-      <div
-        className={`flex ${box} items-center justify-center rounded-lg bg-primary text-white font-bold shadow-sm`}
-      >
-        B
-      </div>
+      <img src="/logo.png" alt="BizOS Logo" className={`${size === 'sm' ? 'h-8 w-8' : 'h-10 w-10'} object-contain`} />
       <span className={`font-bold ${text} tracking-tight text-slate-800`}>
         Biz<span className="text-primary">OS</span>
       </span>

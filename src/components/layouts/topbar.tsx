@@ -87,9 +87,7 @@ export function Topbar() {
       <div className="flex items-center gap-3 min-w-0">
         {/* Mobile brand */}
         <Link href="/dashboard" className="flex items-center gap-2 md:hidden">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white font-bold shadow-sm">
-            B
-          </div>
+          <img src="/logo.png" alt="BizOS Logo" className="h-8 w-8 object-contain" />
           <span className="font-bold text-lg tracking-tight text-slate-800">
             Biz<span className="text-primary">OS</span>
           </span>

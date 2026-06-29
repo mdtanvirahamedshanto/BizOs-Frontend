@@ -44,6 +44,7 @@ export function LoginForm() {
   return (
     <div className="w-full max-w-md bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-8 shadow-xl animate-in fade-in zoom-in-95 duration-300">
       <div className="text-center mb-6">
+        <img src="/logo.png" alt="BizOS Logo" className="h-12 w-12 object-contain mx-auto mb-3" />
         <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
           Biz<span className="text-primary">OS</span> এ লগইন করুন
         </h1>

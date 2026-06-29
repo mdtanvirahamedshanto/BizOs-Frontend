@@ -147,17 +147,13 @@ export function Sidebar() {
       <div className="flex h-16 items-center justify-between px-4 border-b border-slate-100">
         {sidebarOpen ? (
           <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white font-bold text-lg shadow-sm">
-              B
-            </div>
+            <img src="/logo.png" alt="BizOS Logo" className="h-9 w-9 object-contain" />
             <span className="font-bold text-xl tracking-tight text-slate-800">
               Biz<span className="text-primary">OS</span>
             </span>
           </div>
         ) : (
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white font-bold text-lg shadow-sm mx-auto">
-            B
-          </div>
+          <img src="/logo.png" alt="BizOS Logo" className="h-9 w-9 object-contain mx-auto" />
         )}
 
         <button
