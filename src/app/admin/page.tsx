@@ -14,6 +14,7 @@ import { TicketManager } from '@/features/admin/components/ticket-manager';
 import { SystemManager } from '@/features/admin/components/system-manager';
 import { BackupManager } from '@/features/admin/components/backup-manager';
 import { FlagsManager } from '@/features/admin/components/flags-manager';
+import { SubscriptionRequests } from '@/features/admin/components/subscription-requests';
 
 export default function AdminPage() {
   const { user, isAuthenticated, isLoading } = useAuthStore();
@@ -49,6 +50,8 @@ export default function AdminPage() {
         return <TenantManager />;
       case 'subscriptions':
         return <SubscriptionManager />;
+      case 'subscription-requests':
+        return <SubscriptionRequests />;
       case 'tickets':
         return <TicketManager />;
       case 'system':
@@ -67,6 +70,7 @@ export default function AdminPage() {
       case 'overview': return 'ওভারভিউ';
       case 'tenants': return 'মার্চেন্ট';
       case 'subscriptions': return 'প্ল্যান';
+      case 'subscription-requests': return 'পেমেন্ট রিকোয়েস্ট';
       case 'tickets': return 'সাপোর্ট ডেস্ক';
       case 'system': return 'সিস্টেম স্ট্যাটাস';
       case 'backups': return 'ডাটাবেস ব্যাকআপ';
@@ -112,6 +116,7 @@ export default function AdminPage() {
             { id: 'overview', label: 'ওভারভিউ ড্যাশবোর্ড', name: 'Overview' },
             { id: 'tenants', label: 'মার্চেন্ট টেন্যান্টস', name: 'Tenants' },
             { id: 'subscriptions', label: 'প্ল্যান ও প্রাইসিং', name: 'Subscriptions' },
+            { id: 'subscription-requests', label: 'পেমেন্ট রিকোয়েস্ট', name: 'Pending Requests' },
             { id: 'tickets', label: 'সাপোর্ট টিকিট ডেস্ক', name: 'Support Tickets' },
             { id: 'system', label: 'সিস্টেম স্ট্যাটাস ও ব্যবহার', name: 'System Status' },
             { id: 'backups', label: 'ডাটাবেস ব্যাকআপ', name: 'Database Backup' },

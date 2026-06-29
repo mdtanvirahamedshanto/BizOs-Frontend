@@ -143,16 +143,63 @@ export function useToggleFlagMutation() {
 /**
  * Hook to edit subscription plans
  */
-export function useUpdatePlanMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: { id: string; payload: Partial<SubscriptionPlan> }): Promise<SubscriptionPlan> => {
-      const res = await apiClient.put<{data: SubscriptionPlan}>(`/platform/plans/${data.id}`, data.payload);
-      return res.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'plans'] });
-    },
-  });
-}
+  export function useUpdatePlanMutation() {
+    const queryClient = useQueryClient();
+  
+    return useMutation({
+      mutationFn: async (data: { id: string; payload: Partial<SubscriptionPlan> }): Promise<SubscriptionPlan> => {
+        const res = await apiClient.put<{data: SubscriptionPlan}>(`/platform/plans/${data.id}`, data.payload);
+        return res.data;
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['admin', 'plans'] });
+      },
+    });
+  }
+  
+  /**
+   * Hook to retrieve pending subscription requests
+   */
+  export function useSubscriptionRequestsQuery() {
+    return useQuery({
+      queryKey: ['admin', 'subscription-requests'],
+      queryFn: async (): Promise<any[]> => {
+        const res = await apiClient.get<{data: any[]}>('/platform/subscription-requests');
+        return res.data;
+      },
+    });
+  }
+  
+  /**
+   * Hook to approve a subscription request
+   */
+  export function useApproveSubscriptionRequestMutation() {
+    const queryClient = useQueryClient();
+  
+    return useMutation({
+      mutationFn: async (id: string): Promise<any> => {
+        const res = await apiClient.post<{data: any}>(`/platform/subscription-requests/${id}/approve`, {});
+        return res.data;
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['admin', 'subscription-requests'] });
+      },
+    });
+  }
+  
+  /**
+   * Hook to reject a subscription request
+   */
+  export function useRejectSubscriptionRequestMutation() {
+    const queryClient = useQueryClient();
+  
+    return useMutation({
+      mutationFn: async (id: string): Promise<any> => {
+        const res = await apiClient.post<{data: any}>(`/platform/subscription-requests/${id}/reject`, {});
+        return res.data;
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['admin', 'subscription-requests'] });
+      },
+    });
+  }

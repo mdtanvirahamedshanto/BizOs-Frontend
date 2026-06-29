@@ -24,7 +24,8 @@ export type AdminView =
   | 'tickets'
   | 'system'
   | 'backups'
-  | 'flags';
+  | 'flags'
+  | 'subscription-requests';
 
 interface AdminSidebarProps {
   currentView: AdminView;
@@ -55,6 +56,12 @@ const ADMIN_NAVIGATION_ITEMS: AdminNavItem[] = [
     id: 'subscriptions',
     name: 'Subscriptions',
     banglaName: 'প্ল্যান ও প্রাইসিং',
+    icon: CreditCard,
+  },
+  {
+    id: 'subscription-requests',
+    name: 'Pending Requests',
+    banglaName: 'পেমেন্ট রিকোয়েস্ট',
     icon: CreditCard,
   },
   {

@@ -2,14 +2,22 @@
 
 import React from 'react';
 import { CreditCard, CheckCircle2, AlertCircle, XCircle } from 'lucide-react';
-import { useBillingOverviewQuery, useSubscribeMutation, useCancelSubscriptionMutation } from '../api/use-billing';
+import { useBillingOverviewQuery, useSubscribeMutation, useManualSubscribeMutation, useCancelSubscriptionMutation } from '../api/use-billing';
 import { useAdminPlansQuery } from '@/features/admin/api/admin-api'; // Using admin plans query for list of plans
+import { Clock } from 'lucide-react';
 
 export function BillingTab() {
   const { data: overview, isLoading: loadingOverview } = useBillingOverviewQuery();
   const { data: plans, isLoading: loadingPlans } = useAdminPlansQuery();
   const subscribeMutation = useSubscribeMutation();
+  const manualSubscribeMutation = useManualSubscribeMutation();
   const cancelMutation = useCancelSubscriptionMutation();
+
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [selectedPlanId, setSelectedPlanId] = React.useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = React.useState('bkash');
+  const [senderAccount, setSenderAccount] = React.useState('');
+  const [transactionId, setTransactionId] = React.useState('');
 
   if (loadingOverview || loadingPlans) {
     return (
@@ -20,16 +28,39 @@ export function BillingTab() {
   }
 
   const activeSub = overview?.activeSubscription;
+  const pendingRequest = overview?.pendingRequest;
   const currentPlanEnum = overview?.currentPlanEnum || 'FREE';
 
-  const handleSubscribe = async (planId: string) => {
-    if (confirm('আপনি কি এই প্ল্যানটি সাবস্ক্রাইব করতে চান? (এটি সিমুলেটেড পেমেন্ট)')) {
-      try {
-        await subscribeMutation.mutateAsync({ planId, billingCycle: 'monthly' });
-        alert('সফলভাবে সাবস্ক্রাইব করা হয়েছে!');
-      } catch (err) {
-        alert('সাবস্ক্রাইব করতে ব্যর্থ হয়েছে।');
+  const handleSubscribeClick = (planId: string) => {
+    if (planId === 'free') {
+      if (confirm('আপনি কি এই প্ল্যানটি সাবস্ক্রাইব করতে চান?')) {
+        subscribeMutation.mutate({ planId, billingCycle: 'monthly' }, {
+          onSuccess: () => alert('সফলভাবে সাবস্ক্রাইব করা হয়েছে!'),
+          onError: () => alert('সাবস্ক্রাইব করতে ব্যর্থ হয়েছে।')
+        });
       }
+    } else {
+      setSelectedPlanId(planId);
+      setIsModalOpen(true);
+    }
+  };
+
+  const handleManualSubscribeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPlanId || !transactionId) return;
+
+    try {
+      await manualSubscribeMutation.mutateAsync({
+        planId: selectedPlanId,
+        billingCycle: 'monthly',
+        paymentMethod,
+        senderAccount,
+        transactionId
+      });
+      alert('পেমেন্ট রিকোয়েস্ট পাঠানো হয়েছে। অ্যাডমিন অ্যাপ্রুভ করলে সাবস্ক্রিপশন চালু হবে।');
+      setIsModalOpen(false);
+    } catch (err) {
+      alert('রিকোয়েস্ট পাঠাতে ব্যর্থ হয়েছে।');
     }
   };
 
@@ -58,7 +89,18 @@ export function BillingTab() {
           </div>
         </div>
 
-        {activeSub ? (
+        {pendingRequest ? (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold text-amber-800 flex items-center gap-1.5">
+                <Clock className="h-4 w-4" /> আপনার সাবস্ক্রিপশন রিকোয়েস্ট পেন্ডিং আছে
+              </p>
+              <p className="text-[10px] text-amber-600 mt-1">
+                অ্যাডমিন অ্যাপ্রুভ করলে আপনার সাবস্ক্রিপশন চালু হবে। (ট্রানজেকশন আইডি: {pendingRequest.transactionId})
+              </p>
+            </div>
+          </div>
+        ) : activeSub ? (
           <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <p className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
@@ -129,10 +171,10 @@ export function BillingTab() {
 
               <div className="pt-5 mt-auto">
                 <button
-                  disabled={isCurrent || subscribeMutation.isPending}
-                  onClick={() => handleSubscribe(plan.id)}
+                  disabled={isCurrent || subscribeMutation.isPending || !!pendingRequest}
+                  onClick={() => handleSubscribeClick(plan.id)}
                   className={`w-full py-2.5 rounded-lg text-xs font-bold transition-colors ${
-                    isCurrent 
+                    isCurrent || !!pendingRequest
                       ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                       : 'bg-primary text-white hover:bg-primary/90'
                   }`}
@@ -144,6 +186,58 @@ export function BillingTab() {
           );
         })}
       </div>
+
+      {/* Manual Payment Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6">
+            <h3 className="text-lg font-bold text-slate-800 mb-4">পেমেন্ট রিকোয়েস্ট</h3>
+            <p className="text-xs text-slate-500 mb-4">অনুগ্রহ করে নিচের যে কোন একটি মাধ্যমে পেমেন্ট করে ট্রানজেকশন আইডি দিন।</p>
+            <form onSubmit={handleManualSubscribeSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">পেমেন্ট মেথড</label>
+                <select 
+                  className="w-full text-sm border-slate-200 rounded-lg p-2 border" 
+                  value={paymentMethod} 
+                  onChange={e => setPaymentMethod(e.target.value)}
+                >
+                  <option value="bkash">bKash (017XXXXXX)</option>
+                  <option value="nagad">Nagad (017XXXXXX)</option>
+                  <option value="bank">Bank Transfer (DBBL 123.xxx.xxx)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">সেন্ডার একাউন্ট / নম্বর</label>
+                <input 
+                  type="text" 
+                  className="w-full text-sm border-slate-200 rounded-lg p-2 border"
+                  placeholder="যে নম্বর থেকে টাকা পাঠিয়েছেন" 
+                  value={senderAccount}
+                  onChange={e => setSenderAccount(e.target.value)}
+                  required 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">ট্রানজেকশন আইডি (TxnID)</label>
+                <input 
+                  type="text" 
+                  className="w-full text-sm border-slate-200 rounded-lg p-2 border"
+                  placeholder="উদাহরণ: 8H7C..." 
+                  value={transactionId}
+                  onChange={e => setTransactionId(e.target.value)}
+                  required 
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200">বাতিল</button>
+                <button type="submit" disabled={manualSubscribeMutation.isPending} className="px-4 py-2 text-xs font-bold text-white bg-primary rounded-lg hover:bg-primary/90">
+                  {manualSubscribeMutation.isPending ? 'পাঠানো হচ্ছে...' : 'সাবমিট করুন'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

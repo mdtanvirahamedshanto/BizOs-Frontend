@@ -12,6 +12,7 @@ export interface TenantSubscription {
 
 export interface BillingOverview {
   activeSubscription: TenantSubscription | null;
+  pendingRequest: any | null;
   currentPlanEnum: string;
 }
 
@@ -37,6 +38,23 @@ export function useSubscribeMutation() {
   return useMutation({
     mutationFn: async (data: { planId: string; billingCycle: 'monthly' | 'yearly' }): Promise<TenantSubscription> => {
       const res = await apiClient.post<TenantSubscription>('/billing/subscribe', data);
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['billing', 'overview'] });
+    },
+  });
+}
+
+/**
+ * Hook to manually subscribe to a new plan (bKash/Nagad/Bank)
+ */
+export function useManualSubscribeMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { planId: string; billingCycle: 'monthly' | 'yearly'; paymentMethod: string; transactionId: string; senderAccount?: string }): Promise<any> => {
+      const res = await apiClient.post<any>('/billing/manual-subscribe', data);
       return res;
     },
     onSuccess: () => {

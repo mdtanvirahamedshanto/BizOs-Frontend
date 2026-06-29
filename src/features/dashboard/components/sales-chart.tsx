@@ -29,16 +29,16 @@ export function SalesChart({ data }: SalesChartProps) {
     if (data.length === 0) return { salesPoints: [], expensePoints: [] };
 
     const n = data.length;
-    const xStep = chartWidth / (n - 1);
+    const xStep = n > 1 ? chartWidth / (n - 1) : 0;
 
     const salesPoints = data.map((d, i) => {
-      const x = paddingLeft + i * xStep;
+      const x = n === 1 ? paddingLeft + chartWidth / 2 : paddingLeft + i * xStep;
       const y = paddingTop + chartHeight - (d.sales / maxVal) * chartHeight;
       return { x, y, val: d.sales, label: d.label };
     });
 
     const expensePoints = data.map((d, i) => {
-      const x = paddingLeft + i * xStep;
+      const x = n === 1 ? paddingLeft + chartWidth / 2 : paddingLeft + i * xStep;
       const y = paddingTop + chartHeight - (d.expenses / maxVal) * chartHeight;
       return { x, y, val: d.expenses };
     });
