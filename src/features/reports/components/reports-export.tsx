@@ -22,7 +22,7 @@ export function ReportsExport({ activeSection, data }: ReportsExportProps) {
     }
 
     let csvContent = '\uFEFF'; // UTF-8 BOM for Bangla character compatibility in Excel
-    let filename = `BizOS-Report-${activeSection}-${new Date().toISOString().slice(0, 10)}.csv`;
+    const filename = `BizOS-Report-${activeSection}-${new Date().toISOString().slice(0, 10)}.csv`;
 
     if (activeSection === 'profit') {
       csvContent += 'তারিখ ও সময়,বিবরণ,বিক্রয় মূল্য,ক্রয় মূল্য,মোট লাভ,লাভের হার (%)\n';

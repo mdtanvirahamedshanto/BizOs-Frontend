@@ -39,7 +39,7 @@ export const usePosCartStore = create<PosCartState>()((set) => ({
     set((state) => {
       const existingIdx = state.cartItems.findIndex((item) => item.product.id === product.id);
 
-      let nextCart = [...state.cartItems];
+      const nextCart = [...state.cartItems];
       if (existingIdx > -1) {
         const currentQty = nextCart[existingIdx].quantity;
         if (currentQty < product.stockCount) {

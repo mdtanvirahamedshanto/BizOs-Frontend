@@ -19,8 +19,6 @@ export function useOffline() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Initial check just in case state shifted prior to hook mounting
-    setIsOffline(!navigator.onLine);
 
     return () => {
       window.removeEventListener('online', handleOnline);
