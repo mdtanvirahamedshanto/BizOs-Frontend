@@ -18,9 +18,27 @@ const hindSiliguri = Hind_Siliguri({
 });
 
 export const metadata: Metadata = {
-  title: "BizOS | SME Business Operating System & POS",
-  description: "All-in-one operating system and offline-first POS for retail, wholesale, and ledgers in Bangladesh.",
+  title: "BizOS | SME Business Operating System & POS in Bangladesh",
+  description: "বাংলাদেশের ক্ষুদ্র ও মাঝারি ব্যবসার (SME) জন্য সেরা অফলাইন-ফার্স্ট পস (POS), স্টক ম্যানেজমেন্ট এবং হিসাব-নিকাশ সফটওয়্যার। All-in-one operating system and offline-first POS for retail, wholesale, and ledgers in Bangladesh.",
+  keywords: ["POS Bangladesh", "SME Software", "Inventory Management", "Point of Sale", "BizOS", "Ta-Shanto", "Retail Software Bangladesh", "Wholesale Management", "হিসাব খাতা", "স্টক ম্যানেজমেন্ট"],
+  authors: [{ name: "Ta-Shanto", url: "https://tashanto.com" }],
+  creator: "Ta-Shanto",
+  publisher: "BizOS Bangladesh",
   manifest: "/manifest.json",
+  openGraph: {
+    title: "BizOS | SME Business Operating System",
+    description: "বাংলাদেশের ক্ষুদ্র ও মাঝারি ব্যবসার জন্য সেরা অফলাইন-ফার্স্ট পস ও স্টক ম্যানেজমেন্ট সিস্টেম।",
+    url: "https://bizos.app", // Adjust if actual domain is different
+    siteName: "BizOS",
+    locale: "bn_BD",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "BizOS | SME Business Operating System",
+    description: "বাংলাদেশের ক্ষুদ্র ও মাঝারি ব্যবসার জন্য সেরা অফলাইন-ফার্স্ট পস ও স্টক ম্যানেজমেন্ট সিস্টেম।",
+    creator: "@tashanto",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
