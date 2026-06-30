@@ -24,6 +24,8 @@ import {
   useProductUnitsQuery,
   Product 
 } from '../api/inventory-api';
+import { CameraScanner } from '@/components/ui/camera-scanner';
+import { Scan } from 'lucide-react';
 
 interface ProductFormProps {
   product?: Product; // If provided, we are in Edit mode
@@ -109,6 +111,7 @@ const DEFAULT_UNITS = [
 export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) {
   const isEdit = !!product;
   const [showCategoryModal, setShowCategoryModal] = React.useState(false);
+  const [showScanner, setShowScanner] = React.useState(false);
 
   const { mutate: createProduct, isPending: isCreating } = useCreateProductMutation();
   const { mutate: updateProduct, isPending: isUpdating } = useUpdateProductMutation();
@@ -218,8 +221,16 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
               type="text"
               placeholder="স্ক্যান করুন বা কোড লিখুন"
               {...register('barcode')}
-              className="h-10 w-full rounded-lg border pl-9 pr-3 text-xs border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+              className="h-10 w-full rounded-lg border pl-9 pr-10 text-xs border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
             />
+            <button
+              type="button"
+              onClick={() => setShowScanner(true)}
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-primary transition-colors"
+              title="ক্যামেরা দিয়ে স্ক্যান করুন"
+            >
+              <Scan className="h-4 w-4" />
+            </button>
           </div>
         </div>
 
@@ -435,6 +446,16 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
           setShowCategoryModal(false);
         }}
       />
+
+      {showScanner && (
+        <CameraScanner
+          onClose={() => setShowScanner(false)}
+          onScan={(code) => {
+            setValue('barcode', code, { shouldValidate: true });
+            setShowScanner(false);
+          }}
+        />
+      )}
     </form>
   );
 }

@@ -56,8 +56,11 @@ export function PurchaseForm({ onSuccess, onCancel }: PurchaseFormProps) {
 
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
   const watchedItems = watch('items');
-  const tax = watch('tax') ?? 0;
-  const discount = watch('discount') ?? 0;
+  const watchedTax = watch('tax');
+  const watchedDiscount = watch('discount');
+  
+  const tax = Number.isNaN(watchedTax) || !watchedTax ? 0 : watchedTax;
+  const discount = Number.isNaN(watchedDiscount) || !watchedDiscount ? 0 : watchedDiscount;
 
   const subtotal = watchedItems.reduce(
     (sum, line) => sum + (line.quantity || 0) * (line.unitCost || 0),
@@ -66,7 +69,11 @@ export function PurchaseForm({ onSuccess, onCancel }: PurchaseFormProps) {
   const total = Math.max(0, subtotal + tax - discount);
 
   const onSubmit = (data: PurchaseFormValues) => {
-    createPurchase(data, { onSuccess });
+    const payload = { ...data };
+    if (!payload.supplierId) {
+      delete payload.supplierId;
+    }
+    createPurchase(payload, { onSuccess });
   };
 
   return (

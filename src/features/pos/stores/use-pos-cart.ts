@@ -68,7 +68,7 @@ export const usePosCartStore = create<PosCartState>()((set) => ({
     set((state) => {
       const nextCart = state.cartItems.map((item) => {
         if (item.product.id === productId) {
-          const boundedQty = Math.max(1, Math.min(quantity, item.product.stockCount));
+          const boundedQty = Math.max(0, Math.min(quantity, item.product.stockCount));
           return { ...item, quantity: boundedQty };
         }
         return item;
