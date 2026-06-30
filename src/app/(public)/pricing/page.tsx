@@ -1,67 +1,79 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
+import { SubscriptionPlan } from '@/features/admin/types'; // Using existing type if available, or redefine
 
 export const metadata: Metadata = {
   title: 'মূল্যতালিকা (Pricing) | BizOS',
   description: 'BizOS এর সহজ ও সাশ্রয়ী প্যাকেজসমূহ। আপনার ব্যবসার সাইজ অনুযায়ী সঠিক প্ল্যানটি বেছে নিন।',
 };
 
-const PLANS = [
+// Fallback plans if API fails or backend isn't updated yet
+const FALLBACK_PLANS = [
   {
-    name: 'ফ্রি (Free)',
-    price: '৳ ০',
-    period: '/মাস',
+    id: 'free',
+    name: 'ফ্রি ট্রায়াল (Free Trial)',
+    priceMonthly: 0,
+    priceYearly: 0,
+    maxProductsLimit: 50,
+    maxTransactionsLimit: 100,
     description: 'নতুন ও ছোট দোকানের জন্য পারফেক্ট',
-    features: [
-      '১টি দোকান',
-      'সর্বোচ্চ ১০০ টি প্রোডাক্ট',
-      '১ জন ইউজার (মালিক)',
-      'অফলাইন পেমেন্ট ও খাতা',
-      'বেসিক রিপোর্ট',
-    ],
     buttonText: 'ফ্রি ব্যবহার শুরু করুন',
     buttonLink: '/register',
     highlighted: false,
   },
   {
-    name: 'প্রফেশনাল (Pro)',
-    price: '৳ ৪৯৯',
-    period: '/মাস',
-    description: 'যেসব দোকানে স্টাফ ও ইনভেন্টরি বেশি',
-    features: [
-      '১টি দোকান',
-      'আনলিমিটেড প্রোডাক্ট',
-      '৫ জন পর্যন্ত ইউজার (স্টাফ/ম্যানেজার)',
-      'অ্যাডভান্সড ইনভেন্টরি ও লস ট্র্যাকিং',
-      'MFS (bKash, Nagad) হিসাব',
-      'সকল প্রিমিয়াম রিপোর্ট',
-      'প্রাইওরিটি কাস্টমার সাপোর্ট',
-    ],
-    buttonText: '১৪ দিন ফ্রি ট্রায়াল',
+    id: 'basic',
+    name: 'বেসিক স্টোর (Starter Store)',
+    priceMonthly: 50,
+    priceYearly: 500,
+    maxProductsLimit: 500,
+    maxTransactionsLimit: 1000,
+    description: 'যেসব দোকানে স্টাফ ও ইনভেন্টরি মাঝারি',
+    buttonText: 'স্টার্টার দিয়ে শুরু করুন',
+    buttonLink: '/register',
+    highlighted: false,
+  },
+  {
+    id: 'premium',
+    name: 'প্রিমিয়াম বিআইজেড (Premium Biz)',
+    priceMonthly: 500,
+    priceYearly: 5000,
+    maxProductsLimit: 'unlimited',
+    maxTransactionsLimit: 'unlimited',
+    description: 'একাধিক ব্রাঞ্চ বা চেইন শপের জন্য',
+    buttonText: 'প্রিমিয়াম শুরু করুন',
     buttonLink: '/register',
     highlighted: true,
   },
-  {
-    name: 'এন্টারপ্রাইজ (Enterprise)',
-    price: 'কাস্টম',
-    period: '',
-    description: 'একাধিক ব্রাঞ্চ বা চেইন শপের জন্য',
-    features: [
-      'একাধিক ব্রাঞ্চ/দোকান',
-      'আনলিমিটেড প্রোডাক্ট ও ইউজার',
-      'সেন্ট্রাল ইনভেন্টরি ম্যানেজমেন্ট',
-      'কাস্টম রিপোর্ট ও অ্যানালিটিক্স',
-      'কাস্টম ডোমেইন (যদি প্রয়োজন হয়)',
-      'ডেডিকেটেড অ্যাকাউন্ট ম্যানেজার',
-    ],
-    buttonText: 'যোগাযোগ করুন',
-    buttonLink: '/contact',
-    highlighted: false,
-  },
 ];
 
-export default function PricingPage() {
+async function getPlans() {
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+    // We expect the backend /api/v1/platform/plans to be public.
+    const res = await fetch(`${apiUrl}/platform/plans`, { 
+      next: { revalidate: 60 } // Cache for 60 seconds
+    });
+    
+    if (!res.ok) {
+      throw new Error('Failed to fetch plans');
+    }
+    
+    const json = await res.json();
+    if (json.success && Array.isArray(json.data)) {
+      return json.data as any[];
+    }
+    return FALLBACK_PLANS;
+  } catch (error) {
+    console.error('Error fetching plans:', error);
+    return FALLBACK_PLANS;
+  }
+}
+
+export default async function PricingPage() {
+  const plans = await getPlans();
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
       <div className="text-center mb-16">
@@ -74,61 +86,95 @@ export default function PricingPage() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8 items-start">
-        {PLANS.map((plan, index) => (
-          <div
-            key={index}
-            className={`relative rounded-3xl p-8 shadow-sm transition-all hover:shadow-lg ${
-              plan.highlighted 
-                ? 'bg-primary text-white scale-105 shadow-primary/20 border border-primary ring-2 ring-primary ring-offset-2' 
-                : 'bg-white border border-slate-200 text-slate-900'
-            }`}
-          >
-            {plan.highlighted && (
-              <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2">
-                <span className="bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold uppercase tracking-widest py-1 px-4 rounded-full shadow-sm">
-                  সবচেয়ে জনপ্রিয়
-                </span>
-              </div>
-            )}
-            
-            <div className="mb-6">
-              <h2 className={`text-xl font-bold ${plan.highlighted ? 'text-white' : 'text-slate-900'}`}>
-                {plan.name}
-              </h2>
-              <p className={`mt-2 text-sm ${plan.highlighted ? 'text-violet-100' : 'text-slate-500'}`}>
-                {plan.description}
-              </p>
-            </div>
-
-            <div className="mb-8">
-              <span className="text-4xl font-extrabold tracking-tight">{plan.price}</span>
-              {plan.period && <span className={`text-sm font-medium ${plan.highlighted ? 'text-violet-200' : 'text-slate-500'}`}>{plan.period}</span>}
-            </div>
-
-            <ul className="mb-8 space-y-4 text-sm flex-1">
-              {plan.features.map((feature, fIndex) => (
-                <li key={fIndex} className="flex items-start gap-3">
-                  <CheckCircle2 className={`w-5 h-5 shrink-0 ${plan.highlighted ? 'text-emerald-300' : 'text-emerald-500'}`} />
-                  <span className={plan.highlighted ? 'text-white/90' : 'text-slate-600'}>
-                    {feature}
-                  </span>
-                </li>
-              ))}
-            </ul>
-
-            <Link
-              href={plan.buttonLink}
-              className={`flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-bold transition-all active:scale-[0.98] ${
-                plan.highlighted
-                  ? 'bg-white text-primary hover:bg-slate-50'
-                  : 'bg-primary text-white hover:bg-primary/90'
+        {plans.map((plan) => {
+          const isPremium = plan.id === 'premium';
+          const isBasic = plan.id === 'basic';
+          
+          return (
+            <div
+              key={plan.id}
+              className={`relative rounded-3xl p-8 shadow-sm transition-all hover:shadow-lg flex flex-col h-full ${
+                isPremium
+                  ? 'bg-primary text-white scale-105 shadow-primary/20 border border-primary ring-2 ring-primary ring-offset-2' 
+                  : isBasic
+                  ? 'bg-white border-2 border-emerald-500/20 text-slate-900'
+                  : 'bg-white border border-slate-200 text-slate-900'
               }`}
             >
-              {plan.buttonText}
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        ))}
+              {isPremium && (
+                <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2">
+                  <span className="bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold uppercase tracking-widest py-1 px-4 rounded-full shadow-sm flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" /> রিকমেন্ডেড (Featured)
+                  </span>
+                </div>
+              )}
+              
+              <div className="mb-6">
+                <h2 className={`text-xl font-bold ${isPremium ? 'text-white' : 'text-slate-900'}`}>
+                  {plan.name}
+                </h2>
+                <p className={`mt-2 text-sm ${isPremium ? 'text-violet-100' : 'text-slate-500'}`}>
+                  {plan.description || (isPremium ? 'একাধিক ব্রাঞ্চ বা চেইন শপের জন্য' : isBasic ? 'যেসব দোকানে স্টাফ ও ইনভেন্টরি মাঝারি' : 'নতুন ও ছোট দোকানের জন্য পারফেক্ট')}
+                </p>
+              </div>
+
+              <div className="mb-6 bg-white/10 rounded-xl p-4 border border-white/20">
+                <div className="flex justify-between items-baseline mb-2">
+                  <span className={`text-xs font-bold ${isPremium ? 'text-violet-200' : 'text-slate-500'}`}>মাসিক ফি:</span>
+                  <div className="text-right">
+                    <span className="text-3xl font-extrabold tracking-tight">৳{plan.priceMonthly.toLocaleString()}</span>
+                    <span className={`text-sm font-medium ${isPremium ? 'text-violet-200' : 'text-slate-500'} ml-1`}>/ মাস</span>
+                  </div>
+                </div>
+                <div className={`flex justify-between items-baseline border-t ${isPremium ? 'border-white/20' : 'border-slate-200'} pt-2`}>
+                  <span className={`text-xs font-bold ${isPremium ? 'text-violet-200' : 'text-slate-500'}`}>বাৎসরিক ছাড়:</span>
+                  <div className="text-right">
+                    <span className="text-lg font-bold">৳{plan.priceYearly.toLocaleString()}</span>
+                    <span className={`text-xs font-medium ${isPremium ? 'text-violet-200' : 'text-slate-500'} ml-1`}>/ বছর</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-8 space-y-3 pt-2 flex-1">
+                <p className={`text-xs font-bold ${isPremium ? 'text-violet-200' : 'text-slate-500'}`}>প্ল্যান ক্যাপাসিটি লিমিট (Limits):</p>
+                <ul className="space-y-4 text-sm">
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className={`w-5 h-5 shrink-0 ${isPremium ? 'text-emerald-300' : 'text-emerald-500'}`} />
+                    <span className={isPremium ? 'text-white/90' : 'text-slate-600'}>
+                      সর্বোচ্চ পণ্য সংখ্যা: <strong>{plan.maxProductsLimit === 'unlimited' ? 'সীমাহীন' : `${plan.maxProductsLimit} টি`}</strong>
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className={`w-5 h-5 shrink-0 ${isPremium ? 'text-emerald-300' : 'text-emerald-500'}`} />
+                    <span className={isPremium ? 'text-white/90' : 'text-slate-600'}>
+                      সর্বোচ্চ ট্রানজেকশন লিমিট: <strong>{plan.maxTransactionsLimit === 'unlimited' ? 'সীমাহীন' : `${plan.maxTransactionsLimit} টি/মাস`}</strong>
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className={`w-5 h-5 shrink-0 ${isPremium ? 'text-emerald-300' : 'text-emerald-500'}`} />
+                    <span className={isPremium ? 'text-white/90' : 'text-slate-600'}>বকেয়া খাতা ও এসএমএস এলার্ট</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle2 className={`w-5 h-5 shrink-0 ${isPremium ? 'text-emerald-300' : 'text-emerald-500'}`} />
+                    <span className={isPremium ? 'text-white/90' : 'text-slate-600'}>বাংলাদেশি এমএফএস ও মোবাইল সার্ভিস</span>
+                  </li>
+                </ul>
+              </div>
+
+              <Link
+                href="/register"
+                className={`mt-auto flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-bold transition-all active:scale-[0.98] ${
+                  isPremium
+                    ? 'bg-white text-primary hover:bg-slate-50'
+                    : 'bg-primary text-white hover:bg-primary/90'
+                }`}
+              >
+                {isPremium ? 'প্রিমিয়াম শুরু করুন' : isBasic ? 'স্টার্টার দিয়ে শুরু করুন' : 'ফ্রি ব্যবহার শুরু করুন'}
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          );
+        })}
       </div>
 
       <div className="mt-20 text-center">
