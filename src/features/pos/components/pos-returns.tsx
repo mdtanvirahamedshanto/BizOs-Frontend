@@ -102,13 +102,13 @@ export function PosReturns() {
     Object.entries(returnQuantities).forEach(([productId, qty]) => {
       const item = selectedSale.items.find((i: any) => i.productId === productId);
       if (item) {
-        totalReturnedPrice += (item.unitPriceCents / 100) * qty;
+        totalReturnedPrice += ((item.unitPriceCents || 0) / 100) * qty;
       }
     });
 
-    const totalAmount = selectedSale.totalCents / 100;
-    const discountAmount = selectedSale.discountAmountCents / 100;
-    const taxAmount = selectedSale.taxAmountCents / 100;
+    const totalAmount = (selectedSale.totalCents || 0) / 100;
+    const discountAmount = (selectedSale.discountAmountCents || 0) / 100;
+    const taxAmount = (selectedSale.taxAmountCents || 0) / 100;
 
     const discountRatio = totalAmount > 0 ? (discountAmount / totalAmount) : 0;
     const proportionalDiscount = totalReturnedPrice * discountRatio;
