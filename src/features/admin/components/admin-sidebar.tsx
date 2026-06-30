@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
@@ -27,11 +28,6 @@ export type AdminView =
   | 'flags'
   | 'subscription-requests';
 
-interface AdminSidebarProps {
-  currentView: AdminView;
-  onViewChange: (view: AdminView) => void;
-}
-
 interface AdminNavItem {
   id: AdminView;
   name: string;
@@ -39,7 +35,7 @@ interface AdminNavItem {
   icon: React.ComponentType<any>;
 }
 
-const ADMIN_NAVIGATION_ITEMS: AdminNavItem[] = [
+export const ADMIN_NAVIGATION_ITEMS: AdminNavItem[] = [
   {
     id: 'overview',
     name: 'Overview',
@@ -90,9 +86,10 @@ const ADMIN_NAVIGATION_ITEMS: AdminNavItem[] = [
   },
 ];
 
-export function AdminSidebar({ currentView, onViewChange }: AdminSidebarProps) {
+export function AdminSidebar() {
   const sidebarOpen = useUiStore((state) => state.sidebarOpen);
   const toggleSidebar = useUiStore((state) => state.toggleSidebar);
+  const pathname = usePathname();
 
   return (
     <aside
@@ -143,12 +140,12 @@ export function AdminSidebar({ currentView, onViewChange }: AdminSidebarProps) {
       {/* Sidebar Nav Items */}
       <nav className="flex-1 space-y-1 p-3 overflow-y-auto">
         {ADMIN_NAVIGATION_ITEMS.map((item) => {
-          const isActive = currentView === item.id;
+          const isActive = pathname === `/admin/${item.id}`;
 
           return (
-            <button
+            <Link
               key={item.id}
-              onClick={() => onViewChange(item.id)}
+              href={`/admin/${item.id}`}
               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
                 isActive
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-900/20'
@@ -168,7 +165,7 @@ export function AdminSidebar({ currentView, onViewChange }: AdminSidebarProps) {
                   </span>
                 </div>
               )}
-            </button>
+            </Link>
           );
         })}
       </nav>

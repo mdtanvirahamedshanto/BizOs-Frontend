@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -12,6 +14,7 @@ import {
   WifiOff,
   Zap,
 } from 'lucide-react';
+import { useAuthStore } from '@/stores/use-auth';
 
 const FEATURES = [
   {
@@ -132,6 +135,9 @@ function DashboardPreview() {
 }
 
 export function LandingPage() {
+  const { isAuthenticated, user, isLoading } = useAuthStore();
+  const dashboardLink = user?.role === 'SuperAdmin' ? '/admin' : '/dashboard';
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-slate-50">
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_60%_at_50%_0%,#000_50%,transparent_100%)]" />
@@ -145,19 +151,31 @@ export function LandingPage() {
           </Link>
 
           <nav className="flex items-center gap-2 sm:gap-3">
-            <Link
-              href="/login"
-              className="hidden rounded-lg px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:text-slate-900 sm:inline-flex"
-            >
-              লগইন
-            </Link>
-            <Link
-              href="/register"
-              className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-bold text-white shadow-sm transition-all hover:bg-primary/95 active:scale-[0.98]"
-            >
-              বিনামূল্যে শুরু করুন
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+            {!isLoading && isAuthenticated ? (
+              <Link
+                href={dashboardLink}
+                className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-bold text-white shadow-sm transition-all hover:bg-primary/95 active:scale-[0.98]"
+              >
+                ড্যাশবোর্ডে যান
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="hidden rounded-lg px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:text-slate-900 sm:inline-flex"
+                >
+                  লগইন
+                </Link>
+                <Link
+                  href="/register"
+                  className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-bold text-white shadow-sm transition-all hover:bg-primary/95 active:scale-[0.98]"
+                >
+                  বিনামূল্যে শুরু করুন
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       </header>
@@ -184,19 +202,31 @@ export function LandingPage() {
               </p>
 
               <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row lg:justify-start">
-                <Link
-                  href="/register"
-                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-bold text-white shadow-lg shadow-primary/25 transition-all hover:bg-primary/95 active:scale-[0.98] sm:w-auto"
-                >
-                  ১৪ দিন ফ্রি ট্রায়াল শুরু করুন
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                <Link
-                  href="/login"
-                  className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-6 text-sm font-bold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 sm:w-auto"
-                >
-                  ইতিমধ্যে অ্যাকাউন্ট আছে? লগইন
-                </Link>
+                {!isLoading && isAuthenticated ? (
+                  <Link
+                    href={dashboardLink}
+                    className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-bold text-white shadow-lg shadow-primary/25 transition-all hover:bg-primary/95 active:scale-[0.98] sm:w-auto"
+                  >
+                    ড্যাশবোর্ডে যান
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                ) : (
+                  <>
+                    <Link
+                      href="/register"
+                      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-bold text-white shadow-lg shadow-primary/25 transition-all hover:bg-primary/95 active:scale-[0.98] sm:w-auto"
+                    >
+                      ১৪ দিন ফ্রি ট্রায়াল শুরু করুন
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                    <Link
+                      href="/login"
+                      className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-6 text-sm font-bold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 sm:w-auto"
+                    >
+                      ইতিমধ্যে অ্যাকাউন্ট আছে? লগইন
+                    </Link>
+                  </>
+                )}
               </div>
 
               <ul className="mt-8 grid gap-2 text-left sm:grid-cols-2">
@@ -262,34 +292,84 @@ export function LandingPage() {
                 আজই BizOS দিয়ে আপনার ব্যবসা ডিজিটাল করুন
               </h2>
               <p className="mt-3 text-sm leading-relaxed text-violet-100 sm:text-base">
-                কোনো ক্রেডিট কার্ড লাগবে না। মিনিটের মধ্যে শপ সেটআপ, টিম ইনভাইট, প্রথম বিক্রি শুরু।
+                কোনো ক্রেডিট কার্ড লাগবে ঘন। মিনিটের মধ্যে শপ সেটআপ, টিম ইনভাইট, প্রথম বিক্রি শুরু।
               </p>
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <Link
-                  href="/register"
-                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-white px-8 text-sm font-bold text-primary shadow-lg transition-all hover:bg-violet-50 active:scale-[0.98] sm:w-auto"
-                >
-                  ফ্রি অ্যাকাউন্ট খুলুন
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                <Link
-                  href="/login"
-                  className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-white/30 px-8 text-sm font-bold text-white transition-all hover:bg-white/10 sm:w-auto"
-                >
-                  লগইন করুন
-                </Link>
+                {!isLoading && isAuthenticated ? (
+                  <Link
+                    href={dashboardLink}
+                    className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-white px-8 text-sm font-bold text-primary shadow-lg transition-all hover:bg-violet-50 active:scale-[0.98] sm:w-auto"
+                  >
+                    ড্যাশবোর্ডে যান
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                ) : (
+                  <>
+                    <Link
+                      href="/register"
+                      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-white px-8 text-sm font-bold text-primary shadow-lg transition-all hover:bg-violet-50 active:scale-[0.98] sm:w-auto"
+                    >
+                      ফ্রি অ্যাকাউন্ট খুলুন
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                    <Link
+                      href="/login"
+                      className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-white/30 px-8 text-sm font-bold text-white transition-all hover:bg-white/10 sm:w-auto"
+                    >
+                      লগইন করুন
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>
         </section>
       </main>
 
-      <footer className="relative z-10 border-t border-slate-200/60 bg-white/70 py-8 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6">
-          <BrandLogo size="sm" />
-          <p className="text-center text-xs font-medium text-slate-400">
-            © {new Date().getFullYear()} BizOS Bangladesh. সর্বস্বত্ব সংরক্ষিত।
-          </p>
+      <footer className="relative z-10 border-t border-slate-200 bg-white py-12 sm:py-16">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="grid gap-10 md:grid-cols-4 lg:gap-16">
+            <div className="md:col-span-1">
+              <BrandLogo size="md" />
+              <p className="mt-4 text-sm leading-relaxed text-slate-500">
+                বাংলাদেশের SME-দের জন্য সেরা রিটেইল ও হোলসেল অপারেটিং সিস্টেম।
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-slate-900 mb-4">প্রোডাক্ট</h3>
+              <ul className="space-y-3 text-sm text-slate-600">
+                <li><Link href="/how-to-use" className="hover:text-primary transition-colors">কীভাবে ব্যবহার করবেন</Link></li>
+                <li><Link href="/pricing" className="hover:text-primary transition-colors">মূল্য</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-slate-900 mb-4">কোম্পানি</h3>
+              <ul className="space-y-3 text-sm text-slate-600">
+                <li><Link href="/about" className="hover:text-primary transition-colors">আমাদের সম্পর্কে</Link></li>
+                <li><Link href="/contact" className="hover:text-primary transition-colors">যোগাযোগ</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-slate-900 mb-4">পলিসি</h3>
+              <ul className="space-y-3 text-sm text-slate-600">
+                <li><Link href="/terms" className="hover:text-primary transition-colors">শর্তাবলী</Link></li>
+                <li><Link href="/privacy-policy" className="hover:text-primary transition-colors">প্রাইভেসি পলিসি</Link></li>
+                <li><Link href="/refund-policy" className="hover:text-primary transition-colors">রিফান্ড পলিসি</Link></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-12 flex flex-col items-center justify-between border-t border-slate-100 pt-8 sm:flex-row gap-4">
+            <p className="text-sm font-medium text-slate-500">
+              © {new Date().getFullYear()} BizOS Bangladesh. সর্বস্বত্ব সংরক্ষিত।
+            </p>
+            <p className="text-sm font-medium text-slate-500 flex items-center gap-1">
+              Developed with <span className="text-red-500">❤️</span> by <a href="https://tashanto.com" target="_blank" rel="noopener noreferrer" className="font-bold hover:text-primary transition-colors">Ta-Shanto</a>
+            </p>
+          </div>
         </div>
       </footer>
     </div>

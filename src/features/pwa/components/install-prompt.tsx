@@ -83,7 +83,7 @@ export function InstallPrompt() {
           onClick={handleInstall}
           className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-1"
         >
-          <Download className="h-3 w-3" /> ইনস্টল করুন (Install PWA)
+          <Download className="h-3 w-3" /> ইনস্টল করুন (Install App)
         </button>
       </div>
     </div>
