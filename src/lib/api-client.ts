@@ -13,7 +13,7 @@ interface RequestOptions extends RequestInit {
   retryCount?: number;
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://bizosapi.tashanto.com/api/v1';
 const MAX_RETRIES = 3;
 const RETRY_DELAY_BASE = 1000; // 1 second base
 
@@ -129,28 +129,28 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 export const apiClient = {
   get: <T>(path: string, options?: Omit<RequestOptions, 'method'>) =>
     apiRequest<T>(path, { ...options, method: 'GET' }),
-  
+
   post: <T>(path: string, data?: any, options?: Omit<RequestOptions, 'method' | 'body'>) =>
     apiRequest<T>(path, {
       ...options,
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
     }),
-  
+
   put: <T>(path: string, data?: any, options?: Omit<RequestOptions, 'method' | 'body'>) =>
     apiRequest<T>(path, {
       ...options,
       method: 'PUT',
       body: data ? JSON.stringify(data) : undefined,
     }),
-  
+
   patch: <T>(path: string, data?: any, options?: Omit<RequestOptions, 'method' | 'body'>) =>
     apiRequest<T>(path, {
       ...options,
       method: 'PATCH',
       body: data ? JSON.stringify(data) : undefined,
     }),
-  
+
   delete: <T>(path: string, options?: Omit<RequestOptions, 'method'>) =>
     apiRequest<T>(path, { ...options, method: 'DELETE' }),
 };
