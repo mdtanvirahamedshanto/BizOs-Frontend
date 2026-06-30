@@ -53,3 +53,8 @@ npm start
 - **Forms & Validation**: React Hook Form, Zod
 - **Icons**: Lucide React
 - **PWA Capabilities**: Service Workers, IndexedDB
+
+cd /opt/bizos/frontend
+git pull
+docker compose up -d --build
+
