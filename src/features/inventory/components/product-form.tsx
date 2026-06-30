@@ -24,8 +24,9 @@ import {
   useProductUnitsQuery,
   Product 
 } from '../api/inventory-api';
-import { CameraScanner } from '@/components/ui/camera-scanner';
+import { BarcodeScanner } from '@/components/ui/barcode-scanner';
 import { Scan } from 'lucide-react';
+import { useBarcode } from '@/hooks/use-barcode';
 
 interface ProductFormProps {
   product?: Product; // If provided, we are in Edit mode
@@ -147,6 +148,13 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
       unit: product?.unit || 'pcs',
       categoryId: product?.categoryId || '',
       brand: product?.brand || '',
+    },
+  });
+
+  // Listen for hardware barcode scanner
+  useBarcode({
+    onScan: (barcode) => {
+      setValue('barcode', barcode, { shouldValidate: true, shouldDirty: true });
     },
   });
 
@@ -447,15 +455,14 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
         }}
       />
 
-      {showScanner && (
-        <CameraScanner
-          onClose={() => setShowScanner(false)}
-          onScan={(code) => {
-            setValue('barcode', code, { shouldValidate: true });
-            setShowScanner(false);
-          }}
-        />
-      )}
+      <BarcodeScanner
+        open={showScanner}
+        onClose={() => setShowScanner(false)}
+        onDetected={(code) => {
+          setValue('barcode', code, { shouldValidate: true, shouldDirty: true });
+          setShowScanner(false);
+        }}
+      />
     </form>
   );
 }
