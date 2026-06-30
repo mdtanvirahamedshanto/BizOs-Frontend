@@ -35,8 +35,8 @@ export function PosMobileCart({ onCheckoutSuccess }: PosMobileCartProps) {
 
   // Close the sheet automatically if the cart becomes empty
   useEffect(() => {
-    if (itemCount === 0) setOpen(false);
-  }, [itemCount]);
+    if (cartItems.length === 0) setOpen(false);
+  }, [cartItems.length]);
 
   return (
     <div className="lg:hidden">
