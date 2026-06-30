@@ -260,7 +260,7 @@ export function LandingPage() {
                 return (
                   <article
                     key={feature.title}
-                    className="group rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition-all hover:border-primary/20 hover:shadow-md hover:shadow-primary/5"
+                    className="group rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5"
                   >
                     <div
                       className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl ${feature.color}`}
@@ -292,7 +292,7 @@ export function LandingPage() {
                 আজই BizOS দিয়ে আপনার ব্যবসা ডিজিটাল করুন
               </h2>
               <p className="mt-3 text-sm leading-relaxed text-violet-100 sm:text-base">
-                কোনো ক্রেডিট কার্ড লাগবে ঘন। মিনিটের মধ্যে শপ সেটআপ, টিম ইনভাইট, প্রথম বিক্রি শুরু।
+                কোনো ক্রেডিট কার্ড লাগবে না। মিনিটের মধ্যে শপ সেটআপ, টিম ইনভাইট, প্রথম বিক্রি শুরু।
               </p>
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 {!isLoading && isAuthenticated ? (
