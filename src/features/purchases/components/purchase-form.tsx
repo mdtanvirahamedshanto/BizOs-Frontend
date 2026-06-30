@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, Plus, Trash2, Package } from 'lucide-react';
 import { useCreatePurchaseMutation } from '../api/purchases-api';
-import { useSuppliersQuery } from '@/features/ledger/api/suppliers-api';
+import { useSuppliersQuery, useCreateSupplierMutation } from '@/features/ledger/api/suppliers-api';
 import { useProductsQuery } from '@/features/inventory/api/inventory-api';
 import { formatTaka } from '@/features/dashboard/components/kpi-cards';
 
@@ -20,9 +20,9 @@ const purchaseFormSchema = z.object({
   supplierId: z.string().optional(),
   status: z.enum(['DRAFT', 'ORDERED', 'RECEIVED']),
   notes: z.string().optional(),
-  tax: z.number().nonnegative().optional(),
-  discount: z.number().nonnegative().optional(),
-  paymentAmount: z.number().nonnegative().optional(),
+  tax: z.number().nonnegative().optional().catch(undefined),
+  discount: z.number().nonnegative().optional().catch(undefined),
+  paymentAmount: z.number().nonnegative().optional().catch(undefined),
   paymentMethod: z.enum(['CASH', 'BKASH', 'NAGAD', 'ROCKET', 'BANK', 'CARD', 'CHECK', 'OTHER']).optional(),
   items: z.array(lineSchema).min(1, 'কমপক্ষে একটি আইটেম যোগ করুন'),
 });
@@ -38,12 +38,18 @@ export function PurchaseForm({ onSuccess, onCancel }: PurchaseFormProps) {
   const { mutate: createPurchase, isPending } = useCreatePurchaseMutation();
   const { data: suppliers } = useSuppliersQuery('', 'all', undefined, 100);
   const { data: products } = useProductsQuery('', '', false, '', '', undefined, 100);
+  const { mutate: createSupplier, isPending: isCreatingSupplier } = useCreateSupplierMutation();
+
+  const [showSupplierForm, setShowSupplierForm] = useState(false);
+  const [newSupplierName, setNewSupplierName] = useState('');
+  const [newSupplierPhone, setNewSupplierPhone] = useState('');
 
   const {
     register,
     control,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<PurchaseFormValues>({
     resolver: zodResolver(purchaseFormSchema),
@@ -76,6 +82,22 @@ export function PurchaseForm({ onSuccess, onCancel }: PurchaseFormProps) {
     createPurchase(payload, { onSuccess });
   };
 
+  const handleCreateSupplier = () => {
+    if (!newSupplierName.trim()) return;
+    createSupplier(
+      { name: newSupplierName, phone: newSupplierPhone, companyName: newSupplierName, initialDue: 0 },
+      {
+        onSuccess: (newSupplier) => {
+          // Set the created supplier as selected
+          setValue('supplierId', newSupplier.id, { shouldValidate: true });
+          setShowSupplierForm(false);
+          setNewSupplierName('');
+          setNewSupplierPhone('');
+        },
+      }
+    );
+  };
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="border-b border-slate-100 pb-2">
@@ -87,24 +109,53 @@ export function PurchaseForm({ onSuccess, onCancel }: PurchaseFormProps) {
         <div>
           <div className="flex items-center justify-between mb-1">
             <label className="block text-xs font-semibold text-slate-700">সরবরাহকারী</label>
-            <a
-              href="/dashboard/ledger"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={() => setShowSupplierForm(!showSupplierForm)}
               className="text-[10px] text-primary font-bold hover:underline flex items-center gap-0.5"
             >
-              + নতুন মহাজন যোগ করুন
-            </a>
+              {showSupplierForm ? 'বাতিল করুন' : '+ নতুন মহাজন যোগ করুন'}
+            </button>
           </div>
-          <select {...register('supplierId')} className="h-10 w-full rounded-lg border border-slate-200 px-3 text-xs">
-            <option value="">নির্বাচন করুন (ঐচ্ছিক)</option>
-            {suppliers?.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-          {(!suppliers || suppliers.length === 0) && (
+          
+          {showSupplierForm ? (
+            <div className="flex gap-2 items-center bg-slate-50 p-2 rounded-lg border border-slate-200">
+              <input
+                type="text"
+                placeholder="মহাজনের নাম *"
+                value={newSupplierName}
+                onChange={(e) => setNewSupplierName(e.target.value)}
+                className="h-8 w-full rounded-md border border-slate-200 px-2 text-xs"
+                autoFocus
+              />
+              <input
+                type="text"
+                placeholder="মোবাইল (ঐচ্ছিক)"
+                value={newSupplierPhone}
+                onChange={(e) => setNewSupplierPhone(e.target.value)}
+                className="h-8 w-full rounded-md border border-slate-200 px-2 text-xs"
+              />
+              <button
+                type="button"
+                onClick={handleCreateSupplier}
+                disabled={isCreatingSupplier || !newSupplierName.trim()}
+                className="h-8 px-3 bg-primary text-white rounded-md text-xs font-bold shrink-0 disabled:opacity-50"
+              >
+                {isCreatingSupplier ? <Loader2 className="h-3 w-3 animate-spin" /> : 'যোগ করুন'}
+              </button>
+            </div>
+          ) : (
+            <select {...register('supplierId')} className="h-10 w-full rounded-lg border border-slate-200 px-3 text-xs">
+              <option value="">নির্বাচন করুন (ঐচ্ছিক)</option>
+              {suppliers?.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          )}
+          
+          {(!suppliers || suppliers.length === 0) && !showSupplierForm && (
             <p className="text-[10px] text-slate-400 mt-1 font-medium">
-              লেজার → মহাজন খাতা থেকে নতুন মহাজন যোগ করুন
+              আপনার এখনো কোনো মহাজন নেই। উপরের বাটনে ক্লিক করে যোগ করুন।
             </p>
           )}
         </div>
