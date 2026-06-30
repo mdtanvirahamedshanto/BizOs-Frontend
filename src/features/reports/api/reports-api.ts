@@ -1,3 +1,4 @@
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { reports, expenses as expensesApi } from '@/lib/api';
 import {
@@ -41,13 +42,15 @@ function getDateRangeForTimeframe(timeframe: ReportTimeframe): { startDate: Date
  * Composite reports hook — fetches profit, daily/monthly sales, expenses, inventory, and dues.
  */
 export function useReportsQuery(timeframe: ReportTimeframe, startDate = '', endDate = '') {
-  const range =
-    startDate && endDate
+  const range = React.useMemo(() => {
+    return startDate && endDate
       ? { startDate: new Date(startDate), endDate: new Date(endDate) }
       : getDateRangeForTimeframe(timeframe);
+  }, [startDate, endDate, timeframe]);
 
   return useQuery({
-    queryKey: ['reports', timeframe, range.startDate.toISOString(), range.endDate.toISOString()],
+
+    queryKey: ['reports', timeframe, range.startDate.toISOString().split('T')[0], range.endDate.toISOString().split('T')[0]],
     queryFn: async (): Promise<ReportsResult> => {
       const dateParams = { startDate: range.startDate, endDate: range.endDate };
 
